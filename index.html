@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IronBucket - Cloud Storage</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="css/dashboard.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="app-header">
+        <div class="header-left">
+            <button class="menu-toggle" id="menuToggle">
+                <i class="fas fa-bars"></i>
+            </button>
+            <div class="logo">
+                <i class="fas fa-cloud"></i>
+                <span>IronBucket</span>
+            </div>
+        </div>
+
+        <div class="header-center">
+            <div class="search-box">
+                <i class="fas fa-search"></i>
+                <input type="text" id="searchInput" placeholder="Search files and folders...">
+                <button class="search-filter">
+                    <i class="fas fa-filter"></i>
+                </button>
+            </div>
+        </div>
+
+        <div class="header-right">
+            <div class="user-menu">
+                <button class="user-avatar" id="userMenuBtn">
+                    <i class="fas fa-user-circle"></i>
+                </button>
+                <div class="user-dropdown" id="userDropdown">
+                    <div class="user-info">
+                        <i class="fas fa-user-circle"></i>
+                        <div>
+                            <div class="user-name" id="userName">User</div>
+                            <div class="user-email" id="userEndpoint"></div>
+                        </div>
+                    </div>
+                    <div class="dropdown-divider"></div>
+                    <a href="#" onclick="showSettings(); return false;">
+                        <i class="fas fa-cog"></i> Settings
+                    </a>
+                    <a href="#" onclick="showStorageInfo(); return false;">
+                        <i class="fas fa-chart-pie"></i> Storage
+                    </a>
+                    <div class="dropdown-divider"></div>
+                    <a href="#" onclick="logout(); return false;" class="logout-link">
+                        <i class="fas fa-sign-out-alt"></i> Logout
+                    </a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <nav class="sidebar-nav">
+                <a href="#" class="nav-item active" data-view="all">
+                    <i class="fas fa-home"></i>
+                    <span>Home</span>
+                </a>
+                <a href="#" class="nav-item" data-view="buckets">
+                    <i class="fas fa-database"></i>
+                    <span>Buckets</span>
+                </a>
+                <a href="#" class="nav-item" data-view="recent">
+                    <i class="fas fa-clock"></i>
+                    <span>Recent</span>
+                </a>
+                <a href="#" class="nav-item" data-view="starred">
+                    <i class="fas fa-star"></i>
+                    <span>Starred</span>
+                </a>
+            </nav>
+
+
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Toolbar -->
+            <div class="toolbar">
+                <div class="breadcrumb" id="breadcrumb">
+                    <a href="#" data-path=""><i class="fas fa-home"></i></a>
+                </div>
+
+                <div class="toolbar-actions">
+                    <button class="btn-icon" id="createFolderBtn" title="New folder">
+                        <i class="fas fa-folder-plus"></i>
+                    </button>
+                    <button class="btn-icon" id="uploadFileBtn" title="Upload files">
+                        <i class="fas fa-file-upload"></i>
+                    </button>
+                    <button class="btn-icon" id="refreshBtn" title="Refresh">
+                        <i class="fas fa-sync-alt"></i>
+                    </button>
+                    <div class="view-options">
+                        <button class="btn-icon active" id="gridViewBtn" title="Grid view">
+                            <i class="fas fa-th"></i>
+                        </button>
+                        <button class="btn-icon" id="listViewBtn" title="List view">
+                            <i class="fas fa-list"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Files Container -->
+            <div class="files-container" id="filesContainer">
+                <!-- Drop Zone -->
+                <div class="drop-zone" id="dropZone">
+                    <i class="fas fa-cloud-upload-alt"></i>
+                    <h3>Drop files here to upload</h3>
+                    <p>or click to browse</p>
+                </div>
+
+                <!-- Files Grid/List -->
+                <div class="files-grid" id="filesGrid">
+                    <!-- Files will be loaded here -->
+                </div>
+
+                <!-- Empty State -->
+                <div class="empty-state" id="emptyState" style="display: none;">
+                    <i class="fas fa-folder-open"></i>
+                    <h3>This folder is empty</h3>
+                    <p>Upload files or create folders to get started</p>
+                    <button class="btn-primary" onclick="document.getElementById('fileInput').click()">
+                        <i class="fas fa-upload"></i> Upload Files
+                    </button>
+                </div>
+            </div>
+
+            <!-- File Preview Panel -->
+            <aside class="preview-panel" id="previewPanel" style="display: none;">
+                <div class="preview-header">
+                    <h3 id="previewTitle">File Preview</h3>
+                    <button class="btn-icon" onclick="closePreview()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="preview-content" id="previewContent">
+                    <!-- Preview content will be loaded here -->
+                </div>
+                <div class="preview-details" id="previewDetails">
+                    <!-- File details will be shown here -->
+                </div>
+                <div class="preview-actions">
+                    <button class="btn-secondary" id="downloadPreviewBtn">
+                        <i class="fas fa-download"></i> Download
+                    </button>
+                    <button class="btn-secondary" id="sharePreviewBtn">
+                        <i class="fas fa-share"></i> Share
+                    </button>
+                </div>
+            </aside>
+        </main>
+    </div>
+
+    <!-- Context Menu -->
+    <div class="context-menu" id="contextMenu">
+        <a href="#" class="context-item" data-action="open">
+            <i class="fas fa-folder-open"></i> Open
+        </a>
+        <a href="#" class="context-item" data-action="download">
+            <i class="fas fa-download"></i> Download
+        </a>
+        <a href="#" class="context-item" data-action="preview">
+            <i class="fas fa-eye"></i> Preview
+        </a>
+        <div class="context-divider"></div>
+        <a href="#" class="context-item" data-action="rename">
+            <i class="fas fa-edit"></i> Rename
+        </a>
+        <a href="#" class="context-item" data-action="copy">
+            <i class="fas fa-copy"></i> Copy
+        </a>
+        <a href="#" class="context-item" data-action="move">
+            <i class="fas fa-arrows-alt"></i> Move
+        </a>
+        <div class="context-divider"></div>
+        <a href="#" class="context-item" data-action="star">
+            <i class="fas fa-star"></i> Add to Starred
+        </a>
+        <a href="#" class="context-item" data-action="share">
+            <i class="fas fa-share"></i> Share
+        </a>
+        <div class="context-divider"></div>
+        <a href="#" class="context-item" data-action="details">
+            <i class="fas fa-info-circle"></i> Details
+        </a>
+        <a href="#" class="context-item danger" data-action="delete">
+            <i class="fas fa-trash"></i> Delete
+        </a>
+    </div>
+
+    <!-- Modals -->
+    <!-- Upload Modal -->
+    <div class="modal" id="uploadModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Upload Files</h2>
+                <button class="btn-icon" onclick="closeModal('uploadModal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="upload-area" id="uploadArea">
+                    <i class="fas fa-cloud-upload-alt"></i>
+                    <h3>Choose files to upload</h3>
+                    <p>or drag and drop them here</p>
+                    <input type="file" id="fileInput" multiple style="display: none;">
+                    <button class="btn-primary" onclick="document.getElementById('fileInput').click()">
+                        Browse Files
+                    </button>
+                </div>
+                <div class="upload-list" id="uploadList">
+                    <!-- Upload progress items will appear here -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="closeModal('uploadModal')">Cancel</button>
+                <button class="btn-primary" id="startUploadBtn">Start Upload</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create Folder Modal -->
+    <div class="modal" id="createFolderModal">
+        <div class="modal-content modal-small">
+            <div class="modal-header">
+                <h2>Create New Folder</h2>
+                <button class="btn-icon" onclick="closeModal('createFolderModal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <input type="text" id="folderNameInput" placeholder="Folder name" class="form-input">
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="closeModal('createFolderModal')">Cancel</button>
+                <button class="btn-primary" onclick="createFolder()">Create</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Rename Modal -->
+    <div class="modal" id="renameModal">
+        <div class="modal-content modal-small">
+            <div class="modal-header">
+                <h2>Rename</h2>
+                <button class="btn-icon" onclick="closeModal('renameModal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <input type="text" id="renameInput" placeholder="New name" class="form-input">
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="closeModal('renameModal')">Cancel</button>
+                <button class="btn-primary" onclick="confirmRename()">Rename</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- File Preview Modal -->
+    <div class="modal" id="previewModal">
+        <div class="modal-content" style="width: 90%; max-width: 1200px; height: 90vh;">
+            <div class="modal-header">
+                <h2 id="previewModalTitle">File Preview</h2>
+                <button class="btn-icon" onclick="closeModal('previewModal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body" style="padding: 0; display: flex; flex-direction: column; height: calc(100% - 140px);">
+                <div id="previewLoading" style="display: flex; align-items: center; justify-content: center; height: 100%;">
+                    <div class="spinner"></div>
+                </div>
+                <iframe id="previewIframe" style="width: 100%; height: 100%; border: none; display: none;"></iframe>
+                <img id="previewImage" style="max-width: 100%; max-height: 100%; object-fit: contain; margin: auto; display: none;">
+                <div id="previewText" style="padding: 20px; overflow: auto; display: none;">
+                    <pre id="previewTextContent" style="white-space: pre-wrap; word-wrap: break-word;"></pre>
+                </div>
+                <div id="previewError" style="display: none; text-align: center; padding: 40px;">
+                    <i class="fas fa-exclamation-circle" style="font-size: 64px; color: #d93025; margin-bottom: 16px;"></i>
+                    <h3>Preview not available</h3>
+                    <p id="previewErrorMessage">This file type cannot be previewed</p>
+                    <button class="btn-primary" id="previewDownloadBtn" style="margin-top: 20px;">
+                        <i class="fas fa-download"></i> Download File
+                    </button>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <span id="previewFileInfo" style="margin-right: auto; color: #5f6368; font-size: 13px;"></span>
+                <button class="btn-secondary" id="previewShareBtn">
+                    <i class="fas fa-share"></i> Share
+                </button>
+                <button class="btn-primary" id="previewDownloadBtnFooter">
+                    <i class="fas fa-download"></i> Download
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Share Modal -->
+    <div class="modal" id="shareModal">
+        <div class="modal-content modal-small">
+            <div class="modal-header">
+                <h2>Share File</h2>
+                <button class="btn-icon" onclick="closeModal('shareModal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div style="margin-bottom: 20px;">
+                    <h4 id="shareFileName" style="margin: 0 0 10px 0; color: #202124;"></h4>
+                    <p style="margin: 0; color: #5f6368; font-size: 14px;">Select how long the link should be valid:</p>
+                </div>
+
+                <div class="expiration-options" style="display: flex; gap: 10px; margin-bottom: 20px;">
+                    <button class="expiration-btn active" data-minutes="5" onclick="selectExpiration(this)">
+                        5 min
+                    </button>
+                    <button class="expiration-btn" data-minutes="15" onclick="selectExpiration(this)">
+                        15 min
+                    </button>
+                    <button class="expiration-btn" data-minutes="60" onclick="selectExpiration(this)">
+                        1 hour
+                    </button>
+                    <button class="expiration-btn" data-minutes="240" onclick="selectExpiration(this)">
+                        4 hours
+                    </button>
+                </div>
+
+                <div id="shareGenerateSection">
+                    <button class="btn-primary" onclick="generateShareLink()" id="generateLinkBtn" style="width: 100%;">
+                        <i class="fas fa-link"></i> Generate Link
+                    </button>
+                </div>
+
+                <div id="shareLinkSection" style="display: none;">
+                    <div style="margin-bottom: 15px;">
+                        <label style="display: block; margin-bottom: 5px; color: #5f6368; font-size: 13px;">Shareable Link:</label>
+                        <div style="display: flex; gap: 10px;">
+                            <input type="text" id="shareLink" readonly class="form-input" style="flex: 1;" />
+                            <button class="btn-secondary" onclick="copyShareLink()" id="copyLinkBtn">
+                                <i class="fas fa-copy"></i> Copy
+                            </button>
+                        </div>
+                    </div>
+                    <div id="shareLinkExpiry" style="color: #5f6368; font-size: 12px; text-align: center;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Hidden file input -->
+    <input type="file" id="hiddenFileInput" multiple style="display: none;">
+
+    <!-- Scripts -->
+    <script src="js/env.js?v=1.3.1"></script>
+    <script src="js/auth.js?v=1.3.1"></script>
+    <script src="js/dashboard.js?v=1.3.1"></script>
+</body>
+</html>

@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IronBucket S3 UI - Login</title>
+    <link rel="stylesheet" href="css/main.css">
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .login-container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 40px;
+            width: 100%;
+            max-width: 450px;
+        }
+
+        .login-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .login-header h1 {
+            color: #2c3e50;
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+
+        .login-header p {
+            color: #7f8c8d;
+            font-size: 14px;
+        }
+
+        .login-form {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-group label {
+            color: #495057;
+            font-weight: 500;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .form-group input {
+            padding: 12px;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .form-group small {
+            margin-top: 5px;
+            color: #6c757d;
+            font-size: 12px;
+        }
+
+        .btn-login {
+            padding: 14px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .btn-login:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-login:active {
+            transform: translateY(0);
+        }
+
+        .error-message {
+            background: #fee;
+            color: #c33;
+            padding: 12px;
+            border-radius: 6px;
+            font-size: 14px;
+            display: none;
+            text-align: center;
+        }
+
+        .success-message {
+            background: #d4edda;
+            color: #155724;
+            padding: 12px;
+            border-radius: 6px;
+            font-size: 14px;
+            display: none;
+            text-align: center;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            color: #667eea;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(102, 126, 234, 0.3);
+            border-radius: 50%;
+            border-top-color: #667eea;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .logo-icon {
+            font-size: 48px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .advanced-toggle {
+            color: #667eea;
+            text-decoration: none;
+            font-size: 14px;
+            cursor: pointer;
+            display: inline-block;
+            margin-top: 10px;
+        }
+
+        .advanced-toggle:hover {
+            text-decoration: underline;
+        }
+
+        .advanced-settings {
+            display: none;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #dee2e6;
+        }
+
+        .advanced-settings.show {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="logo-icon">🪣</div>
+        <div class="login-header">
+            <h1>IronBucket S3 UI</h1>
+            <p>Connect to your S3-compatible storage</p>
+        </div>
+
+        <form id="loginForm" class="login-form">
+            <div class="error-message" id="errorMessage"></div>
+            <div class="success-message" id="successMessage"></div>
+
+            <div class="form-group">
+                <label for="endpoint">S3 Endpoint URL</label>
+                <input
+                    type="url"
+                    id="endpoint"
+                    name="endpoint"
+                    placeholder="https://s3.amazonaws.com"
+                    required
+                />
+                <small>The URL of your S3-compatible storage endpoint</small>
+            </div>
+
+            <div class="form-group">
+                <label for="accessKey">Access Key</label>
+                <input
+                    type="text"
+                    id="accessKey"
+                    name="accessKey"
+                    placeholder="Enter your access key"
+                    required
+                    autocomplete="username"
+                />
+            </div>
+
+            <div class="form-group">
+                <label for="secretKey">Secret Key</label>
+                <input
+                    type="password"
+                    id="secretKey"
+                    name="secretKey"
+                    placeholder="Enter your secret key"
+                    required
+                    autocomplete="current-password"
+                />
+            </div>
+
+            <a href="#" class="advanced-toggle" onclick="toggleAdvanced(); return false;">Advanced Settings ▼</a>
+
+            <div class="advanced-settings" id="advancedSettings">
+                <div class="form-group">
+                    <label for="region">Region (Optional)</label>
+                    <input
+                        type="text"
+                        id="region"
+                        name="region"
+                        placeholder="us-east-1"
+                        value="us-east-1"
+                    />
+                    <small>AWS region for signature calculation</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="pathStyle">
+                        <input
+                            type="checkbox"
+                            id="pathStyle"
+                            name="pathStyle"
+                            checked
+                        />
+                        Force Path Style
+                    </label>
+                    <small>Use path-style URLs (required for most S3-compatible services)</small>
+                </div>
+            </div>
+
+            <button type="submit" class="btn-login" id="loginBtn">
+                Connect to S3
+            </button>
+
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p>Testing connection...</p>
+            </div>
+        </form>
+    </div>
+
+    <script src="js/env.js"></script>
+    <script>
+        // Get default endpoint from environment configuration
+        const DEFAULT_ENDPOINT = window.DEFAULT_S3_ENDPOINT || '';
+
+        // Prefill endpoint on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            const endpointInput = document.getElementById('endpoint');
+
+            // Check if there are saved credentials
+            const savedEndpoint = localStorage.getItem('s3_endpoint');
+            if (savedEndpoint) {
+                endpointInput.value = savedEndpoint;
+            } else {
+                endpointInput.value = DEFAULT_ENDPOINT;
+            }
+
+            // Check if user is already logged in
+            const credentials = localStorage.getItem('s3_credentials');
+            if (credentials) {
+                // Redirect to main dashboard
+                window.location.href = 'index.html';
+            }
+        });
+
+        function toggleAdvanced() {
+            const advanced = document.getElementById('advancedSettings');
+            const toggle = document.querySelector('.advanced-toggle');
+
+            if (advanced.classList.contains('show')) {
+                advanced.classList.remove('show');
+                toggle.textContent = 'Advanced Settings ▼';
+            } else {
+                advanced.classList.add('show');
+                toggle.textContent = 'Advanced Settings ▲';
+            }
+        }
+
+        document.getElementById('loginForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const errorMsg = document.getElementById('errorMessage');
+            const successMsg = document.getElementById('successMessage');
+            const loading = document.getElementById('loading');
+            const loginBtn = document.getElementById('loginBtn');
+
+            // Clear messages
+            errorMsg.style.display = 'none';
+            successMsg.style.display = 'none';
+
+            // Get form values
+            const endpoint = document.getElementById('endpoint').value.trim();
+            const accessKey = document.getElementById('accessKey').value.trim();
+            const secretKey = document.getElementById('secretKey').value.trim();
+            const region = document.getElementById('region').value.trim() || 'us-east-1';
+            const pathStyle = document.getElementById('pathStyle').checked;
+
+            // Validate
+            if (!endpoint || !accessKey || !secretKey) {
+                errorMsg.textContent = 'Please fill in all required fields';
+                errorMsg.style.display = 'block';
+                return;
+            }
+
+            // Show loading
+            loading.style.display = 'block';
+            loginBtn.style.display = 'none';
+
+            try {
+                // Store credentials
+                const credentials = {
+                    endpoint: endpoint,
+                    accessKey: accessKey,
+                    secretKey: secretKey,
+                    region: region,
+                    forcePathStyle: pathStyle,
+                    signatureVersion: 'v4'
+                };
+
+                // Save to localStorage
+                localStorage.setItem('s3_credentials', JSON.stringify(credentials));
+                localStorage.setItem('s3_endpoint', endpoint);
+
+                // Show success message
+                successMsg.textContent = 'Connected successfully! Redirecting...';
+                successMsg.style.display = 'block';
+
+                // Redirect to main dashboard
+                setTimeout(() => {
+                    window.location.href = 'index.html';
+                }, 1000);
+
+            } catch (error) {
+                console.error('Login error:', error);
+                errorMsg.textContent = 'Failed to connect: ' + error.message;
+                errorMsg.style.display = 'block';
+                loading.style.display = 'none';
+                loginBtn.style.display = 'block';
+            }
+        });
+    </script>
+</body>
+</html>

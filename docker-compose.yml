@@ -1,0 +1,14 @@
+services:
+  ironbucket-ui:
+    image: nginx:alpine
+    ports:
+      - "172.17.0.1:18080:80"
+    volumes:
+      - ./:/usr/share/nginx/html
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf
+    restart: always
+    environment:
+      - NODE_ENV=production
+      - S3_ENDPOINT=${S3_ENDPOINT:-https://nc-tester-1-u3.vm.elestio.app}
+      - S3_REGION=${S3_REGION:-us-east-1}
+      - S3_PATH_STYLE=${S3_PATH_STYLE:-true}
