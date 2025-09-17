@@ -385,11 +385,13 @@ function createGridItem(item) {
     const isFolder = item.type === 'folder' || item.type === 'bucket';
     const icon = getFileIcon(item);
     const isStarred = starredFiles.has(item.key || item.name);
+    // Escape single quotes for JavaScript string
+    const escapedKey = (item.key || item.name).replace(/'/g, "\\'");
 
     return `
         <div class="file-item" data-name="${item.name}" data-type="${item.type}" data-key="${item.key || item.name}">
             <div class="file-actions">
-                <button class="btn-icon" onclick="toggleStar('${item.key || item.name}'); event.stopPropagation();">
+                <button class="btn-icon" onclick="toggleStar('${escapedKey}'); event.stopPropagation();">
                     <i class="fas fa-star ${isStarred ? 'starred' : ''}"></i>
                 </button>
                 <button class="btn-icon" onclick="showItemMenu(event, this)">
@@ -409,6 +411,8 @@ function createGridItem(item) {
 function createListItem(item) {
     const icon = getFileIcon(item);
     const isStarred = starredFiles.has(item.key || item.name);
+    // Escape single quotes for JavaScript string
+    const escapedKey = (item.key || item.name).replace(/'/g, "\\'");
 
     return `
         <div class="file-item" data-name="${item.name}" data-type="${item.type}" data-key="${item.key || item.name}">
@@ -423,7 +427,7 @@ function createListItem(item) {
                 </div>
             </div>
             <div class="file-actions">
-                <button class="btn-icon" onclick="toggleStar('${item.key || item.name}'); event.stopPropagation();">
+                <button class="btn-icon" onclick="toggleStar('${escapedKey}'); event.stopPropagation();">
                     <i class="fas fa-star ${isStarred ? 'starred' : ''}"></i>
                 </button>
                 <button class="btn-icon" onclick="showItemMenu(event, this)">

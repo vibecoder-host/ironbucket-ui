@@ -604,11 +604,31 @@ body {
     top: 8px;
     right: 8px;
     display: none;
+    gap: 4px;
 }
 
 .file-item:hover .file-actions {
     display: flex;
-    gap: 4px;
+}
+
+/* Always show star button if item is starred */
+.file-item .file-actions:has(.fa-star.starred) {
+    display: flex;
+}
+
+/* Starred items */
+.fa-star {
+    color: var(--text-secondary);
+    transition: color 0.2s ease;
+}
+
+.fa-star.starred {
+    color: var(--warning-color);
+}
+
+.fa-star:hover {
+    color: var(--warning-color);
+    opacity: 0.8;
 }
 
 /* List View */
