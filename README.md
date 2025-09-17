@@ -1,8 +1,9 @@
-# IronBucket UI - Modern S3-Compatible Storage Web Interface
+# IronBucket UI - Modern S3 Web interface
 
 A secure, standalone web interface for managing S3-compatible storage systems with a modern, user-friendly design inspired by popular cloud storage services.
+Main goal is to be used with IronBucket (https://github.com/vibecoder-host/ironbucket)
 
-## 🚀 Features
+##  Features
 
 ### Core Functionality
 - **Bucket Management**: Create, list, and delete S3 buckets
@@ -31,7 +32,7 @@ A secure, standalone web interface for managing S3-compatible storage systems wi
 - **Empty Folder Markers**: Automatic handling of S3 folder structure
 - **Session Persistence**: Remembers your location on page refresh
 
-## 🔒 Security Features
+## Security Features
 
 ### Authentication & Authorization
 - **Secure Login**: User-managed S3 credentials with secure storage
@@ -41,13 +42,13 @@ A secure, standalone web interface for managing S3-compatible storage systems wi
 - **No Hardcoded Secrets**: All endpoints and credentials are configurable
 
 ### Security Improvements (v1.3.1)
-- ✅ **XSS Protection**: Proper HTML escaping to prevent script injection
-- ✅ **Removed Sensitive Logs**: No credentials or sensitive data in console
-- ✅ **Configurable Endpoints**: No hardcoded service URLs
-- ✅ **Secure Headers**: Proper CORS configuration
-- ✅ **Input Validation**: Safe handling of user inputs
+- **XSS Protection**: Proper HTML escaping to prevent script injection
+- **Removed Sensitive Logs**: No credentials or sensitive data in console
+- **Configurable Endpoints**: No hardcoded service URLs
+- **Secure Headers**: Proper CORS configuration
+- **Input Validation**: Safe handling of user inputs
 
-## 📦 Installation
+## Installation
 
 ### Quick Start with Docker
 
@@ -87,7 +88,7 @@ services:
     restart: always
 ```
 
-## 🔧 Configuration
+## Configuration
 
 ### Environment Configuration
 
@@ -107,7 +108,7 @@ The included `nginx.conf` provides:
 - SPA (Single Page Application) routing
 - Security headers
 
-## 📱 Usage
+## Usage
 
 ### First Time Setup
 
@@ -205,13 +206,13 @@ ironbucket-ui/
 - Verify write permissions
 - Check available storage quota
 
-## 📈 Recent Updates
+## Recent Updates
 
 ### Version 1.3.1 (Security Update)
-- 🔒 Fixed XSS vulnerabilities
-- 🔒 Removed sensitive console.log statements
-- 🔒 Removed hardcoded endpoints
-- 🔒 Improved HTML escaping
+- Fixed XSS vulnerabilities
+- Removed sensitive console.log statements
+- Removed hardcoded endpoints
+- Improved HTML escaping
 
 ### Version 1.3.0
 - Added URL hash navigation
@@ -227,4 +228,4 @@ ironbucket-ui/
 
 ## License
 
-This project is designed to work with IronBucket and other S3-compatible storage systems.
+AGPL 3

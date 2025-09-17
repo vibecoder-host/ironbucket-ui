@@ -54,6 +54,28 @@ function initializeUI() {
     }
 }
 
+// Toggle sidebar for mobile - defined before setupEventListeners
+function toggleSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebarOverlay');
+
+    if (sidebar.classList.contains('show')) {
+        closeSidebar();
+    } else {
+        sidebar.classList.add('show');
+        overlay.classList.add('show');
+    }
+}
+
+// Close sidebar
+function closeSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebarOverlay');
+
+    sidebar.classList.remove('show');
+    overlay.classList.remove('show');
+}
+
 // Setup event listeners
 function setupEventListeners() {
     // Header buttons
@@ -102,6 +124,28 @@ function setupEventListeners() {
 
     // Initialize rectangle selection
     initRectangleSelection();
+
+    // Mobile menu toggle
+    const menuToggle = document.getElementById('menuToggle');
+    const sidebar = document.getElementById('sidebar');
+    const sidebarOverlay = document.getElementById('sidebarOverlay');
+
+    if (menuToggle) {
+        menuToggle.addEventListener('click', toggleSidebar);
+    }
+
+    if (sidebarOverlay) {
+        sidebarOverlay.addEventListener('click', closeSidebar);
+    }
+
+    // Close sidebar when a nav item is clicked on mobile
+    document.querySelectorAll('.nav-item').forEach(item => {
+        item.addEventListener('click', () => {
+            if (window.innerWidth <= 768) {
+                closeSidebar();
+            }
+        });
+    });
 }
 
 // Rectangle Selection
@@ -119,6 +163,11 @@ function initRectangleSelection() {
 }
 
 function startSelection(e) {
+    // Disable rectangle selection on touch devices
+    if ('ontouchstart' in window || navigator.maxTouchPoints > 0) {
+        return;
+    }
+
     // Only start selection if clicking on empty space (not on file items or buttons)
     if (e.target.closest('.file-item') || e.target.closest('button') || e.target.closest('.bulk-action-bar')) {
         return;
@@ -200,7 +249,8 @@ function updateBulkActionBar() {
     const bulkActionBar = document.getElementById('bulkActionBar');
     const selectedCount = document.getElementById('selectedCount');
 
-    if (selectedFiles.size > 0) {
+    // Only show bulk action bar when 2 or more items are selected
+    if (selectedFiles.size >= 2) {
         bulkActionBar.style.display = 'flex';
         selectedCount.textContent = selectedFiles.size;
     } else {
@@ -222,12 +272,6 @@ function updateUserInfo() {
         document.getElementById('userEndpoint').textContent = S3_CONFIG.endpoint;
         document.getElementById('userName').textContent = S3_CONFIG.accessKey || 'User';
     }
-}
-
-// Toggle sidebar
-function toggleSidebar() {
-    const sidebar = document.getElementById('sidebar');
-    sidebar.classList.toggle('collapsed');
 }
 
 // Toggle user menu
@@ -492,6 +536,60 @@ function displayItems(items) {
     document.querySelectorAll('.file-item').forEach(el => {
         el.addEventListener('click', handleItemClick);
         el.addEventListener('dblclick', handleItemDoubleClick);
+
+        // Add touch event support for mobile
+        let touchStartTime = 0;
+        let touchTimeout = null;
+
+        el.addEventListener('touchstart', (e) => {
+            touchStartTime = Date.now();
+            touchTimeout = setTimeout(() => {
+                // Long press - show context menu
+                const touch = e.touches[0];
+                const fakeEvent = {
+                    currentTarget: el,
+                    clientX: touch.clientX,
+                    clientY: touch.clientY,
+                    preventDefault: () => e.preventDefault()
+                };
+                showContextMenu(fakeEvent, el.dataset.key, el.dataset.type);
+            }, 500);
+        }, { passive: true });
+
+        el.addEventListener('touchend', (e) => {
+            clearTimeout(touchTimeout);
+            const touchDuration = Date.now() - touchStartTime;
+
+            if (touchDuration < 500) {
+                // Short tap - treat as click
+                e.preventDefault();
+
+                // Check if this is a second tap (double tap detection)
+                if (el.dataset.lastTap && (Date.now() - parseInt(el.dataset.lastTap)) < 300) {
+                    // Double tap - open item
+                    delete el.dataset.lastTap;
+                    handleItemDoubleClick({ currentTarget: el });
+                } else {
+                    // Single tap - select item
+                    el.dataset.lastTap = Date.now();
+                    handleItemClick({
+                        currentTarget: el,
+                        target: e.target,
+                        ctrlKey: false,
+                        metaKey: false
+                    });
+
+                    // Clear double tap detection after timeout
+                    setTimeout(() => {
+                        delete el.dataset.lastTap;
+                    }, 300);
+                }
+            }
+        });
+
+        el.addEventListener('touchmove', () => {
+            clearTimeout(touchTimeout);
+        });
     });
 }
 
@@ -818,7 +916,7 @@ function handleContextAction(action) {
             previewFile(key);
             break;
         case 'rename':
-            showRenameDialog(key, name);
+            showRenameDialog(key, name, type);
             break;
         case 'copy':
             copyFile(key);
@@ -1199,8 +1297,8 @@ function updatePreviewDetails(key) {
 }
 
 // Rename dialog
-function showRenameDialog(key, currentName) {
-    renameTarget = { key, currentName };
+function showRenameDialog(key, currentName, type) {
+    renameTarget = { key, currentName, type };
     const modal = document.getElementById('renameModal');
     const input = document.getElementById('renameInput');
 
@@ -1223,31 +1321,118 @@ async function confirmRename() {
 
     try {
         const oldPath = renameTarget.key;
-        const pathParts = oldPath.split('/');
-        pathParts[pathParts.length - 1] = newName;
-        const newPath = pathParts.join('/');
+        const isFolder = renameTarget.type === 'folder';
 
-        // Copy to new location
-        const copyResponse = await s3Fetch(`/${currentBucket}/${newPath}`, {
-            method: 'PUT',
-            headers: {
-                'x-amz-copy-source': `/${currentBucket}/${oldPath}`
+        if (isFolder) {
+            // For folders, we need to rename all objects with this prefix
+            showNotification('Renaming folder...', 'info');
+
+            // List all objects with the folder prefix
+            // Add trailing slash if not present
+            const prefix = oldPath.endsWith('/') ? oldPath : oldPath + '/';
+            const response = await s3Fetch(`/${currentBucket}?prefix=${encodeURIComponent(prefix)}`);
+
+            if (!response.ok) {
+                throw new Error('Failed to list folder contents');
             }
-        });
 
-        if (copyResponse.ok) {
-            // Delete old file
-            await s3Fetch(`/${currentBucket}/${oldPath}`, {
-                method: 'DELETE'
+            const text = await response.text();
+            const parser = new DOMParser();
+            const xmlDoc = parser.parseFromString(text, 'text/xml');
+            const contents = xmlDoc.getElementsByTagName('Contents');
+
+            // Build new folder path
+            const pathParts = oldPath.split('/').filter(p => p);
+            pathParts[pathParts.length - 1] = newName;
+            const newPrefix = pathParts.join('/') + '/';
+
+            // Create the new folder marker first
+            await s3Fetch(`/${currentBucket}/${newPrefix}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Length': '0'
+                }
             });
+
+            // Copy all files to new location
+            let successCount = 0;
+            for (let i = 0; i < contents.length; i++) {
+                const keyNode = contents[i].getElementsByTagName('Key')[0];
+                if (keyNode) {
+                    const oldKey = keyNode.textContent;
+                    const newKey = oldKey.replace(prefix, newPrefix);
+
+                    // Copy file to new location
+                    const copyResponse = await s3Fetch(`/${currentBucket}/${newKey}`, {
+                        method: 'PUT',
+                        headers: {
+                            'x-amz-copy-source': `/${currentBucket}/${oldKey}`
+                        }
+                    });
+
+                    if (copyResponse.ok) {
+                        // Delete old file
+                        await s3Fetch(`/${currentBucket}/${oldKey}`, {
+                            method: 'DELETE'
+                        });
+                        successCount++;
+                    }
+                }
+            }
+
+            // Also delete the folder marker itself if it exists
+            // Try to delete the folder with trailing slash
+            try {
+                await s3Fetch(`/${currentBucket}/${prefix}`, {
+                    method: 'DELETE'
+                });
+            } catch (e) {
+                // Ignore if folder marker doesn't exist
+            }
+
+            // Also try without trailing slash (some S3 implementations)
+            const folderWithoutSlash = prefix.slice(0, -1);
+            if (folderWithoutSlash) {
+                try {
+                    await s3Fetch(`/${currentBucket}/${folderWithoutSlash}`, {
+                        method: 'DELETE'
+                    });
+                } catch (e) {
+                    // Ignore if folder marker doesn't exist
+                }
+            }
 
             closeModal('renameModal');
             refresh();
-            showNotification('File renamed successfully', 'success');
+            showNotification(`Folder renamed successfully (${successCount} files moved)`, 'success');
+        } else {
+            // For files, use the simple rename
+            const pathParts = oldPath.split('/');
+            pathParts[pathParts.length - 1] = newName;
+            const newPath = pathParts.join('/');
+
+            // Copy to new location
+            const copyResponse = await s3Fetch(`/${currentBucket}/${newPath}`, {
+                method: 'PUT',
+                headers: {
+                    'x-amz-copy-source': `/${currentBucket}/${oldPath}`
+                }
+            });
+
+            if (copyResponse.ok) {
+                // Delete old file
+                await s3Fetch(`/${currentBucket}/${oldPath}`, {
+                    method: 'DELETE'
+                });
+
+                closeModal('renameModal');
+                refresh();
+                showNotification('File renamed successfully', 'success');
+            }
         }
     } catch (error) {
-        console.error('Error renaming file:', error);
-        showNotification('Failed to rename file', 'error');
+        console.error('Error renaming:', error);
+        showNotification('Failed to rename: ' + error.message, 'error');
     }
 }
 
