@@ -99,6 +99,121 @@ function setupEventListeners() {
 
     // Hash change event for browser navigation
     window.addEventListener('hashchange', handleHashNavigation);
+
+    // Initialize rectangle selection
+    initRectangleSelection();
+}
+
+// Rectangle Selection
+let isSelecting = false;
+let selectionStart = { x: 0, y: 0 };
+let selectionRectangle = null;
+
+function initRectangleSelection() {
+    selectionRectangle = document.getElementById('selectionRectangle');
+    const filesContainer = document.getElementById('filesContainer');
+
+    filesContainer.addEventListener('mousedown', startSelection);
+    document.addEventListener('mousemove', updateSelection);
+    document.addEventListener('mouseup', endSelection);
+}
+
+function startSelection(e) {
+    // Only start selection if clicking on empty space (not on file items or buttons)
+    if (e.target.closest('.file-item') || e.target.closest('button') || e.target.closest('.bulk-action-bar')) {
+        return;
+    }
+
+    // Clear existing selection if not holding Ctrl/Cmd
+    if (!e.ctrlKey && !e.metaKey) {
+        clearSelection();
+    }
+
+    const filesContainer = document.getElementById('filesContainer');
+    const rect = filesContainer.getBoundingClientRect();
+
+    isSelecting = true;
+    selectionStart.x = e.clientX - rect.left + filesContainer.scrollLeft;
+    selectionStart.y = e.clientY - rect.top + filesContainer.scrollTop;
+
+    selectionRectangle.style.left = selectionStart.x + 'px';
+    selectionRectangle.style.top = selectionStart.y + 'px';
+    selectionRectangle.style.width = '0px';
+    selectionRectangle.style.height = '0px';
+    selectionRectangle.style.display = 'block';
+
+    e.preventDefault();
+}
+
+function updateSelection(e) {
+    if (!isSelecting) return;
+
+    const filesContainer = document.getElementById('filesContainer');
+    const rect = filesContainer.getBoundingClientRect();
+
+    const currentX = e.clientX - rect.left + filesContainer.scrollLeft;
+    const currentY = e.clientY - rect.top + filesContainer.scrollTop;
+
+    const left = Math.min(currentX, selectionStart.x);
+    const top = Math.min(currentY, selectionStart.y);
+    const width = Math.abs(currentX - selectionStart.x);
+    const height = Math.abs(currentY - selectionStart.y);
+
+    selectionRectangle.style.left = left + 'px';
+    selectionRectangle.style.top = top + 'px';
+    selectionRectangle.style.width = width + 'px';
+    selectionRectangle.style.height = height + 'px';
+
+    // Check which files are within the selection rectangle
+    const selectionRect = selectionRectangle.getBoundingClientRect();
+    document.querySelectorAll('.file-item').forEach(item => {
+        const itemRect = item.getBoundingClientRect();
+        const isIntersecting = !(
+            selectionRect.right < itemRect.left ||
+            selectionRect.left > itemRect.right ||
+            selectionRect.bottom < itemRect.top ||
+            selectionRect.top > itemRect.bottom
+        );
+
+        if (isIntersecting) {
+            if (!item.classList.contains('selected')) {
+                item.classList.add('selected');
+                selectedFiles.add(item.dataset.key);
+            }
+        } else if (!e.ctrlKey && !e.metaKey) {
+            item.classList.remove('selected');
+            selectedFiles.delete(item.dataset.key);
+        }
+    });
+
+    updateBulkActionBar();
+}
+
+function endSelection(e) {
+    if (!isSelecting) return;
+
+    isSelecting = false;
+    selectionRectangle.style.display = 'none';
+}
+
+function updateBulkActionBar() {
+    const bulkActionBar = document.getElementById('bulkActionBar');
+    const selectedCount = document.getElementById('selectedCount');
+
+    if (selectedFiles.size > 0) {
+        bulkActionBar.style.display = 'flex';
+        selectedCount.textContent = selectedFiles.size;
+    } else {
+        bulkActionBar.style.display = 'none';
+    }
+}
+
+function clearSelection() {
+    document.querySelectorAll('.file-item.selected').forEach(item => {
+        item.classList.remove('selected');
+    });
+    selectedFiles.clear();
+    updateBulkActionBar();
 }
 
 // Update user info
@@ -520,6 +635,8 @@ function handleItemClick(e) {
         } else {
             selectedFiles.delete(key);
         }
+
+        updateBulkActionBar();
     }
 }
 
@@ -1599,19 +1716,17 @@ function handleKeyboardShortcuts(e) {
             item.classList.add('selected');
             selectedFiles.add(item.dataset.key);
         });
+        updateBulkActionBar();
     }
 
     // Delete key: Delete selected
     if (e.key === 'Delete' && selectedFiles.size > 0) {
-        if (confirm(`Delete ${selectedFiles.size} selected item(s)?`)) {
-            selectedFiles.forEach(key => {
-                deleteItem(key, 'file');
-            });
-        }
+        deleteSelected();
     }
 
     // Escape: Clear selection
     if (e.key === 'Escape') {
+        clearSelection();
         document.querySelectorAll('.file-item.selected').forEach(item => {
             item.classList.remove('selected');
         });
@@ -1773,4 +1888,82 @@ function showSettings() {
 
 function showStorageInfo() {
     alert('Storage details coming soon');
+}
+
+// Bulk Operations
+async function deleteSelected() {
+    const count = selectedFiles.size;
+    if (count === 0) return;
+
+    const message = count === 1
+        ? 'Are you sure you want to delete this item?'
+        : `Are you sure you want to delete ${count} items?`;
+
+    if (!confirm(message)) return;
+
+    const deletePromises = [];
+    for (const key of selectedFiles) {
+        deletePromises.push(deleteFile(key));
+    }
+
+    try {
+        await Promise.all(deletePromises);
+        showNotification(`${count} item(s) deleted successfully`, 'success');
+        clearSelection();
+        loadFiles(); // Reload the file list
+    } catch (error) {
+        showNotification(`Failed to delete some items: ${error.message}`, 'error');
+    }
+}
+
+async function downloadSelected() {
+    if (selectedFiles.size === 0) return;
+
+    // Download files one by one
+    for (const key of selectedFiles) {
+        await downloadFile(key);
+        // Add a small delay between downloads to avoid overwhelming the browser
+        await new Promise(resolve => setTimeout(resolve, 100));
+    }
+}
+
+function moveSelected() {
+    if (selectedFiles.size === 0) return;
+
+    // TODO: Implement move functionality with folder selection dialog
+    alert(`Move ${selectedFiles.size} item(s) - Feature coming soon`);
+}
+
+// Helper function to delete a single file
+async function deleteFile(key) {
+    const response = await s3Fetch(`/${currentBucket}/${key}`, {
+        method: 'DELETE'
+    });
+
+    if (!response.ok) {
+        throw new Error(`Failed to delete ${key}`);
+    }
+}
+
+// Update the existing deleteItem function to use deleteFile
+async function deleteItem(key, type) {
+    const itemName = key.split('/').pop();
+    const confirmMessage = type === 'folder'
+        ? `Delete folder "${itemName}" and all its contents?`
+        : `Delete "${itemName}"?`;
+
+    if (!confirm(confirmMessage)) return;
+
+    try {
+        if (type === 'folder') {
+            // For folders, delete the folder marker
+            await deleteFile(key + '/');
+        } else {
+            await deleteFile(key);
+        }
+        showNotification(`${itemName} deleted successfully`, 'success');
+        loadFiles();
+    } catch (error) {
+        showNotification(`Failed to delete ${itemName}: ${error.message}`, 'error');
+    }
 }

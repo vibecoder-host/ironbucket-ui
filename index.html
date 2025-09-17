@@ -111,6 +111,27 @@
 
             <!-- Files Container -->
             <div class="files-container" id="filesContainer">
+                <!-- Bulk Action Bar -->
+                <div class="bulk-action-bar" id="bulkActionBar" style="display: none;">
+                    <div class="bulk-action-info">
+                        <span id="selectedCount">0</span> items selected
+                    </div>
+                    <div class="bulk-action-buttons">
+                        <button class="btn-secondary" onclick="downloadSelected()">
+                            <i class="fas fa-download"></i> Download
+                        </button>
+                        <button class="btn-secondary" onclick="moveSelected()">
+                            <i class="fas fa-arrows-alt"></i> Move
+                        </button>
+                        <button class="btn-danger" onclick="deleteSelected()">
+                            <i class="fas fa-trash"></i> Delete
+                        </button>
+                        <button class="btn-ghost" onclick="clearSelection()">
+                            <i class="fas fa-times"></i> Clear
+                        </button>
+                    </div>
+                </div>
+
                 <!-- Drop Zone -->
                 <div class="drop-zone" id="dropZone">
                     <i class="fas fa-cloud-upload-alt"></i>
@@ -122,6 +143,9 @@
                 <div class="files-grid" id="filesGrid">
                     <!-- Files will be loaded here -->
                 </div>
+
+                <!-- Selection Rectangle -->
+                <div class="selection-rectangle" id="selectionRectangle" style="display: none;"></div>
 
                 <!-- Empty State -->
                 <div class="empty-state" id="emptyState" style="display: none;">

@@ -1113,3 +1113,66 @@ body {
         width: 100%;
     }
 }
+
+/* Selection Rectangle */
+.selection-rectangle {
+    position: absolute;
+    border: 2px solid var(--primary-color);
+    background: rgba(26, 115, 232, 0.1);
+    pointer-events: none;
+    z-index: 100;
+    border-radius: 4px;
+}
+
+/* Bulk Action Bar */
+.bulk-action-bar {
+    position: sticky;
+    top: 0;
+    background: var(--bg-primary);
+    border-bottom: 1px solid var(--border-color);
+    padding: 12px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    box-shadow: var(--shadow-sm);
+    z-index: 100;
+    margin-bottom: 16px;
+}
+
+.bulk-action-info {
+    font-size: 14px;
+    color: var(--text-primary);
+    font-weight: 500;
+}
+
+.bulk-action-buttons {
+    display: flex;
+    gap: 8px;
+}
+
+.bulk-action-buttons .btn-secondary,
+.bulk-action-buttons .btn-danger,
+.bulk-action-buttons .btn-ghost {
+    padding: 6px 12px;
+    font-size: 13px;
+}
+
+.btn-ghost {
+    background: transparent;
+    color: var(--text-secondary);
+    border: 1px solid var(--border-color);
+}
+
+.btn-ghost:hover {
+    background: var(--bg-hover);
+}
+
+.btn-danger {
+    background: var(--danger-color);
+    color: white;
+    border: none;
+}
+
+.btn-danger:hover {
+    background: #b71c1c;
+}
