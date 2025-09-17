@@ -75,13 +75,19 @@ class AwsV4Signer {
         const dateStamp = amzDate.substr(0, 8);
 
         headers['x-amz-date'] = amzDate;
-        headers['host'] = url.hostname;
+        // Include port in host header if present
+        headers['host'] = url.port ? `${url.hostname}:${url.port}` : url.hostname;
 
+        // Calculate payload hash - always use SHA256 of empty string for GET/HEAD
+        let payloadHash;
         if (body && method !== 'GET' && method !== 'HEAD') {
-            headers['x-amz-content-sha256'] = await this.hash(body);
+            payloadHash = await this.hash(body);
         } else {
-            headers['x-amz-content-sha256'] = 'UNSIGNED-PAYLOAD';
+            // SHA256 hash of empty string
+            payloadHash = 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855';
         }
+
+        headers['x-amz-content-sha256'] = payloadHash;
 
         // Create canonical request
         const canonicalUri = url.pathname;
@@ -95,7 +101,7 @@ class AwsV4Signer {
             canonicalQueryString,
             canonicalHeaders,
             signedHeaders,
-            headers['x-amz-content-sha256']
+            payloadHash  // Use actual hash, not UNSIGNED-PAYLOAD
         ].join('\n');
 
         // Create string to sign

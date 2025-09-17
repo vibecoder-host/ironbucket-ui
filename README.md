@@ -1,132 +1,230 @@
-# IronBucket UI - Standalone S3 Web Interface
+# IronBucket UI - Modern S3-Compatible Storage Web Interface
 
-A standalone web UI for managing S3-compatible storage with user authentication.
+A secure, standalone web interface for managing S3-compatible storage systems with a modern, user-friendly design inspired by popular cloud storage services.
 
-## Features
+## 🚀 Features
 
-### Modern Cloud Storage Interface
-- **Professional Dashboard**: Dropbox/Google Drive-inspired design
-- **User Authentication**: Secure login screen for S3 credentials
-- **Responsive Layout**: Works on desktop and mobile devices
-
-### File Management
-- **Browse**: Navigate S3 buckets and folders with ease
-- **Upload**: Drag-and-drop or click to upload files
-- **Download**: Quick download with one click
-- **Preview**: In-app preview for images, text, and documents
-- **Rename**: Edit file and folder names inline
-- **Copy/Move**: Organize files between folders
-- **Delete**: Remove files and folders with confirmation
-- **Search**: Quick search across all files
-
-### Advanced Features
-- **Context Menu**: Right-click actions for all operations
-- **Keyboard Shortcuts**: Ctrl+A to select all, Delete key, etc.
-- **View Modes**: Switch between grid and list views
-- **Starred Files**: Mark important files for quick access
-- **Recent Files**: Track recently accessed items
-- **File Details**: View metadata and properties
-- **Share Links**: Generate presigned URLs for sharing
-- **Bulk Operations**: Select multiple files for batch actions
+### Core Functionality
+- **Bucket Management**: Create, list, and delete S3 buckets
+- **File Operations**: Upload, download, rename, copy, move, and delete files
+- **Folder Management**: Create and navigate folder hierarchies
+- **Drag & Drop Upload**: Intuitive file upload with progress tracking
+- **File Preview**: In-browser preview for images, PDFs, text files, and media
+- **Search**: Quick search across all files and folders
+- **Share Links**: Generate time-limited presigned URLs for file sharing
 
 ### User Interface
-- **Sidebar Navigation**: Quick access to different sections
-- **Breadcrumb Trail**: Easy navigation path
-- **Storage Indicator**: Visual storage usage display
+- **Modern Dashboard**: Clean, professional design similar to Dropbox/Google Drive
+- **Responsive Layout**: Works seamlessly on desktop, tablet, and mobile devices
+- **Grid & List Views**: Toggle between different file display modes
+- **Context Menu**: Right-click actions for quick file operations
+- **Breadcrumb Navigation**: Easy path navigation with clickable breadcrumbs
+- **URL Hash Navigation**: Browser back/forward support with path preservation
+- **Keyboard Shortcuts**: Ctrl+A to select all, Delete key, etc.
 - **Real-time Updates**: Instant feedback on all operations
-- **Notifications**: Success/error messages for all actions
 
-## Authentication
+### Advanced Features
+- **Starred Files**: Mark important files for quick access
+- **Recent Files**: Track recently accessed items
+- **File Details**: View comprehensive metadata and properties
+- **Bulk Operations**: Select multiple files for batch actions
+- **Empty Folder Markers**: Automatic handling of S3 folder structure
+- **Session Persistence**: Remembers your location on page refresh
 
-### Login Flow
-1. Users are presented with a login screen on first visit
-2. Default S3 endpoint is pre-filled (configurable via environment)
-3. Users enter their Access Key and Secret Key
-4. Credentials are stored securely in browser localStorage
-5. Logout button available to clear stored credentials
+## 🔒 Security Features
 
-### Configuration
+### Authentication & Authorization
+- **Secure Login**: User-managed S3 credentials with secure storage
+- **AWS Signature V4**: Industry-standard request signing
+- **No Backend Storage**: Credentials stored only in browser localStorage
+- **Session Management**: Automatic logout capability
+- **No Hardcoded Secrets**: All endpoints and credentials are configurable
 
-The default S3 endpoint can be configured in `js/env.js`:
+### Security Improvements (v1.3.1)
+- ✅ **XSS Protection**: Proper HTML escaping to prevent script injection
+- ✅ **Removed Sensitive Logs**: No credentials or sensitive data in console
+- ✅ **Configurable Endpoints**: No hardcoded service URLs
+- ✅ **Secure Headers**: Proper CORS configuration
+- ✅ **Input Validation**: Safe handling of user inputs
 
+## 📦 Installation
+
+### Quick Start with Docker
+
+1. **Clone or download the repository**:
+```bash
+cd /opt/app/ironbucket-ui
+```
+
+2. **Configure the environment** (optional):
+Edit `js/env.js` to set your default S3 endpoint:
 ```javascript
-// Default S3 endpoint - can be changed
-window.DEFAULT_S3_ENDPOINT = 'https://nc-tester-1-u3.vm.elestio.app';
+window.DEFAULT_S3_ENDPOINT = ''; // Your S3-compatible endpoint
 window.DEFAULT_S3_REGION = 'us-east-1';
 window.DEFAULT_PATH_STYLE = true;
 ```
 
-### Environment Variables
-
-You can customize the default endpoint using Docker environment variables:
-
-```yaml
-environment:
-  - S3_ENDPOINT=https://your-s3-endpoint.com
-  - S3_REGION=us-east-1
-  - S3_PATH_STYLE=true
-```
-
-## Access
-
-The UI is available at:
-- **Public Access**: https://nc-tester-1-u3.vm.elestio.app:1818/
-- **Direct URL**: http://172.17.0.1:18080/
-
-### First Time Usage
-
-1. Visit https://nc-tester-1-u3.vm.elestio.app:1818/
-2. You will be automatically redirected to the login page
-3. Enter your S3 credentials:
-   - Endpoint is pre-filled with: `https://nc-tester-1-u3.vm.elestio.app`
-   - Enter your Access Key
-   - Enter your Secret Key
-4. Click "Connect to S3"
-5. Your credentials will be saved in browser localStorage
-6. You'll be redirected to the modern dashboard
-
-## Docker Setup
-
-The application runs in a Docker container using nginx:alpine.
-
-### Start the container:
+3. **Start the container**:
 ```bash
-cd /opt/app/ironbucket-ui
 docker compose up -d
 ```
 
-### View logs:
-```bash
-docker compose logs -f
+4. **Access the interface**:
+- Local: http://localhost:80
+- With configured domain: https://your-domain.com
+
+### Docker Compose Configuration
+
+```yaml
+services:
+  ironbucket-ui:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+    volumes:
+      - ./:/usr/share/nginx/html
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf
+    restart: always
 ```
 
-### Stop the container:
-```bash
-docker compose down
+## 🔧 Configuration
+
+### Environment Configuration
+
+Create or edit `js/env.js`:
+```javascript
+// Default S3 endpoint - configure for your deployment
+window.DEFAULT_S3_ENDPOINT = 'https://your-s3-endpoint.com';
+window.DEFAULT_S3_REGION = 'us-east-1';
+window.DEFAULT_PATH_STYLE = true; // Required for MinIO and most S3-compatible services
 ```
 
-## File Structure
+### Nginx Configuration
 
+The included `nginx.conf` provides:
+- Proper cache headers for development
+- CORS support for S3 API calls
+- SPA (Single Page Application) routing
+- Security headers
+
+## 📱 Usage
+
+### First Time Setup
+
+1. **Navigate to the application URL**
+2. **Login page appears automatically** if not authenticated
+3. **Enter your S3 credentials**:
+   - S3 Endpoint URL (or use the default)
+   - Access Key
+   - Secret Key
+   - Region (optional, defaults to us-east-1)
+4. **Click "Connect to S3"**
+5. **Dashboard loads** with your buckets
+
+### File Management
+
+#### Uploading Files
+- **Drag & Drop**: Drag files directly onto the interface
+- **Click Upload**: Use the upload button in the toolbar
+- **Progress Tracking**: See real-time upload progress
+
+#### Organizing Files
+- **Create Folders**: Click the folder button and enter a name
+- **Move Files**: Right-click and select "Move" or drag to folders
+- **Rename**: Right-click and select "Rename"
+- **Delete**: Right-click and select "Delete" (with confirmation)
+
+#### Sharing Files
+1. Right-click on any file
+2. Select "Share"
+3. Choose expiration time (5 min, 15 min, 1 hour, 4 hours)
+4. Click "Generate Link"
+5. Copy the presigned URL
+
+### Navigation
+
+- **URL Hash Navigation**: URLs update as you navigate (e.g., `#bucket-name/folder/subfolder`)
+- **Breadcrumbs**: Click any part of the path to jump to that location
+- **Browser Back/Forward**: Full support for browser navigation
+- **Direct Links**: Share URLs that open directly to specific folders
+
+## Architecture
+
+### Technology Stack
+- **Frontend**: Pure HTML5, CSS3, and JavaScript (no framework dependencies)
+- **Styling**: Modern CSS with CSS Grid and Flexbox
+- **Icons**: Font Awesome 6
+- **Server**: Nginx Alpine (lightweight Docker container)
+- **Storage**: Any S3-compatible storage (AWS S3, MinIO, IronBucket, etc.)
+
+### File Structure
 ```
 ironbucket-ui/
-├── index.html         # Modern dashboard interface
+├── index.html         # Main dashboard interface
 ├── login.html         # Authentication page
 ├── css/
 │   └── dashboard.css  # Modern dashboard styles
 ├── js/
-│   ├── auth.js        # Authentication & S3 signing
+│   ├── auth.js        # S3 authentication & request signing
 │   ├── dashboard.js   # Dashboard functionality
 │   └── env.js         # Environment configuration
 ├── docker-compose.yml # Docker configuration
-├── nginx.conf         # Nginx configuration
-└── .env               # Environment variables
+├── nginx.conf         # Nginx server configuration
+├── .env              # Environment variables (optional)
+└── README.md         # This file
 ```
 
-## Security Notes
+## Security Considerations
 
-- Credentials are stored in browser localStorage (client-side only)
-- Each user manages their own S3 credentials
-- No credentials are hardcoded in the application
-- Uses AWS Signature V4 for authentication
-- CORS headers are configured in nginx.conf
-- Logout clears all stored credentials from browser
+### Credential Storage
+- Credentials are stored in browser's localStorage
+- Each user manages their own credentials
+- No server-side storage of credentials
+- Credentials are only sent to the configured S3 endpoint
+
+### Known Limitations
+- localStorage persists until explicitly cleared
+- No built-in session timeout (browser-dependent)
+
+## Troubleshooting
+
+### Common Issues
+
+**Cannot connect to S3**:
+- Verify endpoint URL is correct
+- Check CORS configuration on S3 bucket
+- Ensure credentials have necessary permissions
+
+**Files not displaying**:
+- Check browser console for errors
+- Verify bucket permissions
+- Clear browser cache and localStorage
+
+**Upload failures**:
+- Check file size limits
+- Verify write permissions
+- Check available storage quota
+
+## 📈 Recent Updates
+
+### Version 1.3.1 (Security Update)
+- 🔒 Fixed XSS vulnerabilities
+- 🔒 Removed sensitive console.log statements
+- 🔒 Removed hardcoded endpoints
+- 🔒 Improved HTML escaping
+
+### Version 1.3.0
+- Added URL hash navigation
+- Removed unused Shared and Trash sections
+- Improved folder deletion handling
+- Hidden "empty" folder marker files
+
+### Version 1.2.x
+- Added folder creation and navigation
+- Improved file preview capabilities
+- Enhanced context menu functionality
+- Fixed multiple UI bugs
+
+## License
+
+This project is designed to work with IronBucket and other S3-compatible storage systems.
