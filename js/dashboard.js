@@ -1427,7 +1427,16 @@ async function confirmRename() {
             pathParts[pathParts.length - 1] = newName;
             const newPath = pathParts.join('/');
 
-            // Copy to new location
+            // Use server-side copy for rename (now supported in IronBucket)
+            showNotification('Renaming file...', 'info');
+
+            console.log('Renaming file using server-side copy:', {
+                from: oldPath,
+                to: newPath,
+                bucket: currentBucket
+            });
+
+            // Perform server-side copy
             const copyResponse = await s3Fetch(`/${currentBucket}/${newPath}`, {
                 method: 'PUT',
                 headers: {
@@ -1436,14 +1445,27 @@ async function confirmRename() {
             });
 
             if (copyResponse.ok) {
+                console.log('File copied successfully using server-side copy');
+
                 // Delete old file
-                await s3Fetch(`/${currentBucket}/${oldPath}`, {
+                const deleteResponse = await s3Fetch(`/${currentBucket}/${oldPath}`, {
                     method: 'DELETE'
                 });
+
+                if (!deleteResponse.ok) {
+                    console.warn('Failed to delete original file:', deleteResponse.status);
+                    // Don't fail the whole operation if delete fails
+                }
 
                 closeModal('renameModal');
                 refresh();
                 showNotification('File renamed successfully', 'success');
+            } else {
+                // Log error details for debugging
+                const errorText = await copyResponse.text();
+                console.error(`Failed to rename file from ${oldPath} to ${newPath}:`, copyResponse.status);
+                console.error('Error details:', errorText);
+                throw new Error(`Failed to rename file (${copyResponse.status})`);
             }
         }
     } catch (error) {

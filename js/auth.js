@@ -78,12 +78,13 @@ class AwsV4Signer {
         // Include port in host header if present
         headers['host'] = url.port ? `${url.hostname}:${url.port}` : url.hostname;
 
-        // Calculate payload hash - always use SHA256 of empty string for GET/HEAD
+        // Calculate payload hash
         let payloadHash;
-        if (body && method !== 'GET' && method !== 'HEAD') {
+        // For PUT requests with x-amz-copy-source, body should be empty
+        if (body && body !== '' && method !== 'GET' && method !== 'HEAD') {
             payloadHash = await this.hash(body);
         } else {
-            // SHA256 hash of empty string
+            // SHA256 hash of empty string for GET/HEAD or empty body
             payloadHash = 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855';
         }
 
