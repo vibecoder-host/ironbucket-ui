@@ -843,6 +843,8 @@ function handleContextMenu(e) {
             item.style.display = 'none';
         } else if (item.dataset.action === 'preview' && isFolder) {
             item.style.display = 'none';
+        } else if (item.dataset.action === 'rename' && isFolder) {
+            item.style.display = 'none';  // Hide rename for folders
         } else {
             item.style.display = '';
         }
@@ -880,6 +882,8 @@ function showItemMenu(event, button) {
             item.style.display = 'none';
         } else if (item.dataset.action === 'preview' && isFolder) {
             item.style.display = 'none';
+        } else if (item.dataset.action === 'rename' && isFolder) {
+            item.style.display = 'none';  // Hide rename for folders
         } else {
             item.style.display = '';
         }
@@ -916,6 +920,11 @@ function handleContextAction(action) {
             previewFile(key);
             break;
         case 'rename':
+            // Disable rename for folders
+            if (type === 'folder') {
+                showNotification('Folder rename is not supported', 'info');
+                return;
+            }
             showRenameDialog(key, name, type);
             break;
         case 'copy':
@@ -1319,9 +1328,16 @@ async function confirmRename() {
         return;
     }
 
+    // Only support file rename, not folders
+    if (renameTarget.type === 'folder') {
+        showNotification('Folder rename is not supported', 'info');
+        closeModal('renameModal');
+        return;
+    }
+
     try {
         const oldPath = renameTarget.key;
-        const isFolder = renameTarget.type === 'folder';
+        const isFolder = false; // Force to false since we no longer support folder rename
 
         if (isFolder) {
             // For folders, we need to rename all objects with this prefix
