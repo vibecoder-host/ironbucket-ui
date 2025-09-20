@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>IronBucket S3 UI - Login</title>
+    <title>IronBucket Explorer - Login</title>
     <link rel="stylesheet" href="css/main.css">
     <style>
         body {
@@ -11,31 +11,33 @@
             justify-content: center;
             align-items: center;
             min-height: 100vh;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: #f8f9fa;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
         }
 
         .login-container {
             background: white;
-            border-radius: 12px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+            padding: 48px;
             width: 100%;
-            max-width: 450px;
+            max-width: 420px;
         }
 
         .login-header {
             text-align: center;
-            margin-bottom: 30px;
+            margin-bottom: 40px;
         }
 
         .login-header h1 {
-            color: #2c3e50;
-            font-size: 28px;
-            margin-bottom: 10px;
+            color: #212529;
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 8px;
         }
 
         .login-header p {
-            color: #7f8c8d;
+            color: #6c757d;
             font-size: 14px;
         }
 
@@ -54,21 +56,24 @@
             color: #495057;
             font-weight: 500;
             margin-bottom: 8px;
-            font-size: 14px;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
         .form-group input {
-            padding: 12px;
+            padding: 12px 14px;
             border: 1px solid #dee2e6;
-            border-radius: 6px;
+            border-radius: 4px;
             font-size: 14px;
-            transition: border-color 0.3s;
+            transition: all 0.2s;
+            background: #fff;
         }
 
         .form-group input:focus {
             outline: none;
-            border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+            border-color: #0066cc;
+            box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.1);
         }
 
         .form-group small {
@@ -79,58 +84,66 @@
 
         .btn-login {
             padding: 14px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: #0066cc;
             color: white;
             border: none;
-            border-radius: 6px;
-            font-size: 16px;
-            font-weight: 500;
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: 600;
             cursor: pointer;
-            transition: transform 0.2s, box-shadow 0.2s;
+            transition: background-color 0.2s;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
         .btn-login:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+            background: #0052a3;
         }
 
         .btn-login:active {
-            transform: translateY(0);
+            background: #004080;
+        }
+
+        .btn-login:disabled {
+            background: #cccccc;
+            cursor: not-allowed;
         }
 
         .error-message {
-            background: #fee;
-            color: #c33;
+            background: #f8d7da;
+            color: #721c24;
             padding: 12px;
-            border-radius: 6px;
-            font-size: 14px;
+            border-radius: 4px;
+            font-size: 13px;
             display: none;
             text-align: center;
+            border: 1px solid #f5c6cb;
         }
 
         .success-message {
             background: #d4edda;
             color: #155724;
             padding: 12px;
-            border-radius: 6px;
-            font-size: 14px;
+            border-radius: 4px;
+            font-size: 13px;
             display: none;
             text-align: center;
+            border: 1px solid #c3e6cb;
         }
 
         .loading {
             display: none;
             text-align: center;
-            color: #667eea;
+            color: #0066cc;
         }
 
         .spinner {
             display: inline-block;
             width: 20px;
             height: 20px;
-            border: 3px solid rgba(102, 126, 234, 0.3);
+            border: 2px solid rgba(0, 102, 204, 0.2);
             border-radius: 50%;
-            border-top-color: #667eea;
+            border-top-color: #0066cc;
             animation: spin 1s ease-in-out infinite;
         }
 
@@ -139,18 +152,26 @@
         }
 
         .logo-icon {
-            font-size: 48px;
-            text-align: center;
-            margin-bottom: 20px;
+            width: 64px;
+            height: 64px;
+            margin: 0 auto 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #efefef;
+            color: white;
+            border-radius: 12px;
+            font-size: 32px;
         }
 
         .advanced-toggle {
-            color: #667eea;
+            color: #0066cc;
             text-decoration: none;
-            font-size: 14px;
+            font-size: 13px;
             cursor: pointer;
             display: inline-block;
             margin-top: 10px;
+            font-weight: 500;
         }
 
         .advanced-toggle:hover {
@@ -173,7 +194,7 @@
     <div class="login-container">
         <div class="logo-icon">🪣</div>
         <div class="login-header">
-            <h1>IronBucket S3 UI</h1>
+            <h1>IronBucket Explorer</h1>
             <p>Connect to your S3-compatible storage</p>
         </div>
 
@@ -258,6 +279,7 @@
     </div>
 
     <script src="js/env.js"></script>
+    <script src="js/auth.js"></script>
     <script>
         // Get default endpoint from environment configuration
         const DEFAULT_ENDPOINT = window.DEFAULT_S3_ENDPOINT || '';
@@ -324,9 +346,10 @@
             // Show loading
             loading.style.display = 'block';
             loginBtn.style.display = 'none';
+            loginBtn.disabled = true;
 
             try {
-                // Store credentials
+                // Create credentials object
                 const credentials = {
                     endpoint: endpoint,
                     accessKey: accessKey,
@@ -336,25 +359,74 @@
                     signatureVersion: 'v4'
                 };
 
-                // Save to localStorage
-                localStorage.setItem('s3_credentials', JSON.stringify(credentials));
-                localStorage.setItem('s3_endpoint', endpoint);
+                // Test the credentials with a simple request
+                const testSigner = new AwsV4Signer(credentials);
+                const testRequest = {
+                    url: endpoint,
+                    method: 'GET',
+                    headers: {},
+                    body: ''
+                };
 
-                // Show success message
-                successMsg.textContent = 'Connected successfully! Redirecting...';
-                successMsg.style.display = 'block';
+                const signedHeaders = await testSigner.sign(testRequest);
 
-                // Redirect to main dashboard
-                setTimeout(() => {
-                    window.location.href = 'index.html';
-                }, 1000);
+                // Try to list buckets as a test
+                const response = await fetch(endpoint, {
+                    method: 'GET',
+                    headers: signedHeaders
+                });
+
+                // Check response
+                if (response.ok || response.status === 403) {
+                    // 200 OK or 403 Forbidden (valid auth but no permissions) are both acceptable
+                    // Save credentials only after successful test
+                    localStorage.setItem('s3_credentials', JSON.stringify(credentials));
+                    localStorage.setItem('s3_endpoint', endpoint);
+
+                    // Show success message
+                    successMsg.textContent = 'Connected successfully! Redirecting...';
+                    successMsg.style.display = 'block';
+
+                    // Redirect to main dashboard
+                    setTimeout(() => {
+                        window.location.href = 'index.html';
+                    }, 1000);
+
+                } else if (response.status === 401) {
+                    // 401 Unauthorized means invalid credentials
+                    throw new Error('Invalid credentials. Please check your access key and secret key.');
+                } else if (response.status === 0) {
+                    // Network error or CORS issue
+                    throw new Error('Cannot connect to endpoint. Please check the URL and ensure CORS is enabled.');
+                } else {
+                    // Other error
+                    const errorText = await response.text().catch(() => '');
+                    throw new Error(`Connection failed (${response.status}). ${errorText}`.trim());
+                }
 
             } catch (error) {
                 console.error('Login error:', error);
-                errorMsg.textContent = 'Failed to connect: ' + error.message;
+
+                // Display user-friendly error message
+                let errorMessage = 'Failed to connect: ';
+
+                if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+                    errorMessage += 'Cannot reach the endpoint. Please check the URL and your network connection.';
+                } else if (error.message.includes('Invalid credentials')) {
+                    errorMessage += error.message;
+                } else if (error.message.includes('CORS')) {
+                    errorMessage += 'CORS not enabled on the endpoint. Please enable CORS for browser access.';
+                } else {
+                    errorMessage += error.message || 'Unknown error occurred';
+                }
+
+                errorMsg.textContent = errorMessage;
                 errorMsg.style.display = 'block';
+            } finally {
+                // Re-enable the login button and hide loading
                 loading.style.display = 'none';
                 loginBtn.style.display = 'block';
+                loginBtn.disabled = false;
             }
         });
     </script>
