@@ -359,10 +359,10 @@
                     signatureVersion: 'v4'
                 };
 
-                // Test the credentials with a simple request
+                // Test the credentials by listing buckets
                 const testSigner = new AwsV4Signer(credentials);
                 const testRequest = {
-                    url: endpoint,
+                    url: endpoint, // This should list buckets when called without a path
                     method: 'GET',
                     headers: {},
                     body: ''
@@ -370,21 +370,41 @@
 
                 const signedHeaders = await testSigner.sign(testRequest);
 
+                // Update loading message
+                loading.querySelector('p').textContent = 'Testing credentials...';
+
                 // Try to list buckets as a test
                 const response = await fetch(endpoint, {
                     method: 'GET',
                     headers: signedHeaders
                 });
 
-                // Check response
-                if (response.ok || response.status === 403) {
-                    // 200 OK or 403 Forbidden (valid auth but no permissions) are both acceptable
-                    // Save credentials only after successful test
+                // Parse response to check if it's valid XML/S3 response
+                let isValidS3Response = false;
+                if (response.ok) {
+                    try {
+                        const responseText = await response.text();
+                        // Check if response contains S3 bucket listing XML structure
+                        if (responseText.includes('ListAllMyBucketsResult') ||
+                            responseText.includes('ListBucketResult') ||
+                            responseText.includes('Buckets')) {
+                            isValidS3Response = true;
+                        }
+                    } catch (e) {
+                        // If we can't parse the response, consider it invalid
+                        console.error('Failed to parse response:', e);
+                    }
+                }
+
+                // Check response - only accept if credentials are valid
+                if (response.ok && isValidS3Response) {
+                    // 200 OK with valid S3 response - credentials are good
+                    // Save credentials only after successful validation
                     localStorage.setItem('s3_credentials', JSON.stringify(credentials));
                     localStorage.setItem('s3_endpoint', endpoint);
 
                     // Show success message
-                    successMsg.textContent = 'Connected successfully! Redirecting...';
+                    successMsg.textContent = 'Credentials validated successfully! Redirecting...';
                     successMsg.style.display = 'block';
 
                     // Redirect to main dashboard
@@ -392,16 +412,29 @@
                         window.location.href = 'index.html';
                     }, 1000);
 
-                } else if (response.status === 401) {
-                    // 401 Unauthorized means invalid credentials
-                    throw new Error('Invalid credentials. Please check your access key and secret key.');
+                } else if (response.status === 401 || response.status === 403) {
+                    // 401 Unauthorized or 403 Forbidden mean invalid credentials
+                    // Note: We cannot distinguish between invalid credentials and valid credentials
+                    // with no permissions, so we err on the side of caution and reject
+                    throw new Error('Invalid credentials or insufficient permissions. Please check your access key and secret key.');
                 } else if (response.status === 0) {
                     // Network error or CORS issue
                     throw new Error('Cannot connect to endpoint. Please check the URL and ensure CORS is enabled.');
+                } else if (!isValidS3Response && response.ok) {
+                    // Response OK but not S3 format - probably wrong endpoint
+                    throw new Error('Endpoint does not appear to be an S3-compatible service.');
                 } else {
                     // Other error
                     const errorText = await response.text().catch(() => '');
-                    throw new Error(`Connection failed (${response.status}). ${errorText}`.trim());
+                    if (errorText.includes('InvalidAccessKeyId')) {
+                        throw new Error('Invalid Access Key ID. Please check your credentials.');
+                    } else if (errorText.includes('SignatureDoesNotMatch')) {
+                        throw new Error('Invalid Secret Key. Please check your credentials.');
+                    } else if (errorText.includes('AccessDenied')) {
+                        throw new Error('Access denied. Please check your credentials and permissions.');
+                    } else {
+                        throw new Error(`Connection failed (${response.status}). Please verify your endpoint and credentials.`);
+                    }
                 }
 
             } catch (error) {
