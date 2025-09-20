@@ -170,12 +170,23 @@ class FileEditor {
             this.modal.classList.add('show');
             document.body.style.overflow = 'hidden';
 
-            // Focus editor
+            // Refresh editor multiple times to ensure visibility
+            // First refresh after a minimal delay
             setTimeout(() => {
                 if (this.editor) {
-                    this.editor.focus();
+                    this.editor.refresh();
                 }
-            }, 100);
+            }, 10);
+
+            // Second refresh and focus after modal animation completes
+            setTimeout(() => {
+                if (this.editor) {
+                    this.editor.refresh(); // Force CodeMirror to recalculate dimensions
+                    this.editor.focus();
+                    // Scroll to top
+                    this.editor.scrollTo(0, 0);
+                }
+            }, 250);
 
             this.showLoading(false);
 
@@ -193,25 +204,13 @@ class FileEditor {
         }
 
         try {
-            // Generate signed URL for reading
-            if (window.generatePresignedUrl) {
-                const signedUrl = await window.generatePresignedUrl(fileKey, 3600);
-
-                const response = await fetch(signedUrl);
-                if (!response.ok) {
-                    throw new Error(`Failed to fetch file: ${response.statusText}`);
-                }
-
-                return await response.text();
-            } else {
-                // Fallback to direct s3Fetch if generatePresignedUrl not available
-                const response = await window.s3Fetch(`/${window.currentBucket}/${fileKey}`);
-                if (!response.ok) {
-                    throw new Error(`Failed to fetch file: ${response.statusText}`);
-                }
-
-                return await response.text();
+            // Use s3Fetch directly
+            const response = await window.s3Fetch(`/${window.currentBucket}/${fileKey}`);
+            if (!response.ok) {
+                throw new Error(`Failed to fetch file: ${response.statusText}`);
             }
+
+            return await response.text();
         } catch (error) {
             console.error('Error fetching file content:', error);
             throw error;
@@ -271,6 +270,11 @@ class FileEditor {
         });
 
         this.setModified(false);
+
+        // Force immediate refresh to ensure content is visible
+        if (this.editor) {
+            this.editor.refresh();
+        }
     }
 
     // Update modal title with file path and modified indicator
@@ -304,6 +308,8 @@ class FileEditor {
         this.currentTheme = theme;
         if (this.editor) {
             this.editor.setOption('theme', theme);
+            // Refresh after theme change to ensure proper rendering
+            setTimeout(() => this.editor.refresh(), 50);
         }
 
         // Apply theme to modal
@@ -401,26 +407,15 @@ class FileEditor {
 
     // Upload file content to S3
     async uploadFileContent(fileKey, content) {
-        if (!window.s3Signer || !window.currentBucket) {
-            throw new Error('S3 not initialized');
+        if (!window.currentBucket) {
+            throw new Error('No bucket selected');
         }
 
         try {
-            // Create a blob from the content
-            const blob = new Blob([content], { type: 'text/plain' });
-
-            // Generate signed URL for upload
-            const signedUrl = await window.s3Signer.getSignedUrl('putObject', {
-                Bucket: window.currentBucket,
-                Key: fileKey,
-                ContentType: 'text/plain',
-                Expires: 3600
-            });
-
-            // Upload the file
-            const response = await fetch(signedUrl, {
+            // Use s3Fetch directly like other parts of the application
+            const response = await s3Fetch(`/${window.currentBucket}/${fileKey}`, {
                 method: 'PUT',
-                body: blob,
+                body: content,
                 headers: {
                     'Content-Type': 'text/plain'
                 }

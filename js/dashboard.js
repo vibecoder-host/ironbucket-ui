@@ -786,7 +786,7 @@ function createListItem(item) {
                 <div class="file-name">${item.name}</div>
                 <div class="file-meta">
                     <span>${formatFileSize(item.size)}</span>
-                    <span>${formatDate(item.lastModified || item.creationDate)}</span>
+                    <span style="cursor: help;" title="${(item.lastModified || item.creationDate) ? new Date(item.lastModified || item.creationDate).toLocaleString() : ''}">${formatDate(item.lastModified || item.creationDate)}</span>
                 </div>
             </div>
             <div class="file-actions">
@@ -1371,7 +1371,14 @@ async function previewFile(key) {
     // Get file info
     const file = files.find(f => f.key === key);
     if (file) {
-        fileInfo.textContent = `${formatFileSize(file.size)} • ${formatDate(file.lastModified)}`;
+        const dateElement = document.createElement('span');
+        dateElement.style.cursor = 'help';
+        dateElement.title = file.lastModified ? new Date(file.lastModified).toLocaleString() : '';
+        dateElement.textContent = formatDate(file.lastModified);
+
+        fileInfo.innerHTML = '';
+        fileInfo.appendChild(document.createTextNode(`${formatFileSize(file.size)} • `));
+        fileInfo.appendChild(dateElement);
     }
 
     // Set up download and share buttons
@@ -1673,7 +1680,7 @@ function updatePreviewDetails(key) {
         </div>
         <div class="detail-row">
             <span class="detail-label">Modified</span>
-            <span class="detail-value">${formatDate(file.lastModified)}</span>
+            <span class="detail-value" style="cursor: help;" title="${file.lastModified ? new Date(file.lastModified).toLocaleString() : ''}">${formatDate(file.lastModified)}</span>
         </div>
         <div class="detail-row">
             <span class="detail-label">Path</span>
@@ -2861,16 +2868,40 @@ function formatDate(dateStr) {
     const now = new Date();
     const diff = now - date;
 
-    if (diff < 86400000) { // Less than 24 hours
-        const hours = Math.floor(diff / 3600000);
-        if (hours < 1) return 'Just now';
-        return `${hours} hour${hours > 1 ? 's' : ''} ago`;
-    } else if (diff < 604800000) { // Less than 7 days
-        const days = Math.floor(diff / 86400000);
-        return `${days} day${days > 1 ? 's' : ''} ago`;
-    } else {
-        return date.toLocaleDateString();
+    // For negative differences (future dates), show the actual date/time
+    if (diff < 0) {
+        return date.toLocaleString();
     }
+
+    // Less than 1 minute
+    if (diff < 60000) {
+        return 'Just now';
+    }
+
+    // Less than 1 hour - show minutes
+    if (diff < 3600000) {
+        const minutes = Math.floor(diff / 60000);
+        return `${minutes} minute${minutes !== 1 ? 's' : ''} ago`;
+    }
+
+    // Less than 24 hours - show hours and minutes
+    if (diff < 86400000) {
+        const hours = Math.floor(diff / 3600000);
+        const minutes = Math.floor((diff % 3600000) / 60000);
+        if (minutes > 0) {
+            return `${hours} hour${hours !== 1 ? 's' : ''}, ${minutes} min ago`;
+        }
+        return `${hours} hour${hours !== 1 ? 's' : ''} ago`;
+    }
+
+    // Less than 7 days
+    if (diff < 604800000) {
+        const days = Math.floor(diff / 86400000);
+        return `${days} day${days !== 1 ? 's' : ''} ago`;
+    }
+
+    // Default to showing full date and time
+    return date.toLocaleString();
 }
 
 function formatFileInfo(item) {
@@ -3326,9 +3357,13 @@ async function showVersions(key) {
 
             const row = document.createElement('tr');
             row.style.borderBottom = '1px solid var(--border-color)';
+
+            // Format the full datetime for tooltip
+            const fullDateTime = lastModified ? new Date(lastModified).toLocaleString() : '';
+
             row.innerHTML = `
                 <td style="padding: 12px; font-family: monospace; font-size: 12px;">${versionId.substring(0, 8)}...</td>
-                <td style="padding: 12px;">${formatDate(lastModified)}</td>
+                <td style="padding: 12px; cursor: help;" title="${fullDateTime}">${formatDate(lastModified)}</td>
                 <td style="padding: 12px;">${formatFileSize(parseInt(size))}</td>
                 <td style="padding: 12px;">
                     ${isLatest ? '<span style="color: var(--success-color);"><i class="fas fa-check"></i> Yes</span>' : 'No'}
