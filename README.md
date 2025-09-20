@@ -3,6 +3,19 @@
 A secure, standalone web interface for managing S3-compatible storage systems with a modern, user-friendly design inspired by popular cloud storage services.
 Main goal is to be used with IronBucket (https://github.com/vibecoder-host/ironbucket)
 
+## Screenshots
+
+<p align="center">
+  <img src="screenshots/ironbucket-0-dashboard.jpg" width="30%" alt="Dashboard" />
+  <img src="screenshots/ironbucket-1-advancedFeatures.jpg" width="30%" alt="Advanced Features" />
+  <img src="screenshots/ironbucket-2-bucketSettings.jpg" width="30%" alt="Bucket Settings" />
+</p>
+<p align="center">
+  <img src="screenshots/ironbucket-3-fileEditor.jpg" width="30%" alt="File Editor" />
+  <img src="screenshots/ironbucket-4-mediaPreview.jpg" width="30%" alt="Media Preview" />
+  <img src="screenshots/ironbucket-5-versionHistory.jpg" width="30%" alt="Version History" />
+</p>
+
 ##  Features
 
 ### Core Functionality
