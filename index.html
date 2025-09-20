@@ -6,6 +6,17 @@
     <title>IronBucket - Cloud Storage</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="css/dashboard.css">
+
+    <!-- CodeMirror CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/codemirror.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/theme/monokai.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/theme/dracula.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/theme/material.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/theme/eclipse.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/fold/foldgutter.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/dialog/dialog.min.css">
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 </head>
 <body>
     <!-- Header -->
@@ -24,13 +35,16 @@
             <div class="search-box">
                 <i class="fas fa-search"></i>
                 <input type="text" id="searchInput" placeholder="Search files and folders...">
-                <button class="search-filter">
-                    <i class="fas fa-filter"></i>
+                <button class="search-filter" id="advancedSearchBtn" title="Advanced search">
+                    <i class="fas fa-sliders-h"></i>
                 </button>
             </div>
         </div>
 
         <div class="header-right">
+            <button class="btn-icon theme-toggle" id="themeToggle" title="Toggle dark mode">
+                <i class="fas fa-moon"></i>
+            </button>
             <div class="user-menu">
                 <button class="user-avatar" id="userMenuBtn">
                     <i class="fas fa-user-circle"></i>
@@ -80,11 +94,24 @@
                 </a>
             </nav>
 
-
+            <div class="sidebar-footer">
+                <button class="btn-primary btn-block" onclick="openCreateBucketModal()">
+                    <i class="fas fa-plus"></i> New Bucket
+                </button>
+            </div>
         </aside>
 
         <!-- Main Content -->
         <main class="main-content">
+            <!-- Clipboard Notification -->
+            <div class="clipboard-notification" id="clipboardNotification" style="display: none;">
+                <i class="fas fa-clipboard"></i>
+                <span id="clipboardText">1 item copied</span>
+                <button class="btn-icon btn-sm" onclick="clearClipboard()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
             <!-- Toolbar -->
             <div class="toolbar">
                 <div class="breadcrumb" id="breadcrumb">
@@ -92,15 +119,108 @@
                 </div>
 
                 <div class="toolbar-actions">
+                    <!-- File Type Filter Dropdown -->
+                    <div class="filter-dropdown">
+                        <button class="btn-icon" id="filterBtn" title="Filter files">
+                            <i class="fas fa-filter"></i>
+                            <span class="filter-badge" id="filterBadge" style="display: none;">0</span>
+                        </button>
+                        <div class="filter-menu" id="filterMenu" style="display: none;">
+                            <div class="filter-header">
+                                <span>File Type Filters</span>
+                                <button class="btn-ghost btn-sm" id="clearFiltersBtn">Clear All</button>
+                            </div>
+                            <div class="filter-options">
+                                <label class="filter-option">
+                                    <input type="checkbox" value="all" id="filterAll" checked>
+                                    <span><i class="fas fa-asterisk"></i> All Files</span>
+                                </label>
+                                <label class="filter-option">
+                                    <input type="checkbox" value="folder" data-filter="folder">
+                                    <span><i class="fas fa-folder"></i> Folders</span>
+                                </label>
+                                <label class="filter-option">
+                                    <input type="checkbox" value="image" data-filter="image">
+                                    <span><i class="fas fa-image"></i> Images</span>
+                                </label>
+                                <label class="filter-option">
+                                    <input type="checkbox" value="video" data-filter="video">
+                                    <span><i class="fas fa-video"></i> Videos</span>
+                                </label>
+                                <label class="filter-option">
+                                    <input type="checkbox" value="audio" data-filter="audio">
+                                    <span><i class="fas fa-music"></i> Audio</span>
+                                </label>
+                                <label class="filter-option">
+                                    <input type="checkbox" value="document" data-filter="document">
+                                    <span><i class="fas fa-file-alt"></i> Documents</span>
+                                </label>
+                                <label class="filter-option">
+                                    <input type="checkbox" value="archive" data-filter="archive">
+                                    <span><i class="fas fa-file-archive"></i> Archives</span>
+                                </label>
+                                <label class="filter-option">
+                                    <input type="checkbox" value="code" data-filter="code">
+                                    <span><i class="fas fa-code"></i> Code</span>
+                                </label>
+                                <label class="filter-option">
+                                    <input type="checkbox" value="other" data-filter="other">
+                                    <span><i class="fas fa-file"></i> Other</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
                     <button class="btn-icon" id="createFolderBtn" title="New folder">
                         <i class="fas fa-folder-plus"></i>
                     </button>
                     <button class="btn-icon" id="uploadFileBtn" title="Upload files">
                         <i class="fas fa-file-upload"></i>
                     </button>
+                    <button class="btn-icon" id="compareBtn" title="Compare files" onclick="toggleComparisonMode()">
+                        <i class="fas fa-exchange-alt"></i>
+                    </button>
                     <button class="btn-icon" id="refreshBtn" title="Refresh">
                         <i class="fas fa-sync-alt"></i>
                     </button>
+                    <!-- Sort Dropdown -->
+                    <div class="sort-dropdown">
+                        <button class="btn-icon" id="sortBtn" title="Sort files">
+                            <i class="fas fa-sort"></i>
+                        </button>
+                        <div class="sort-menu" id="sortMenu" style="display: none;">
+                            <div class="sort-header">Sort By</div>
+                            <label class="sort-option">
+                                <input type="radio" name="sortBy" value="name-asc" checked>
+                                <span><i class="fas fa-sort-alpha-down"></i> Name (A-Z)</span>
+                            </label>
+                            <label class="sort-option">
+                                <input type="radio" name="sortBy" value="name-desc">
+                                <span><i class="fas fa-sort-alpha-up"></i> Name (Z-A)</span>
+                            </label>
+                            <label class="sort-option">
+                                <input type="radio" name="sortBy" value="size-asc">
+                                <span><i class="fas fa-sort-numeric-down"></i> Size (Small first)</span>
+                            </label>
+                            <label class="sort-option">
+                                <input type="radio" name="sortBy" value="size-desc">
+                                <span><i class="fas fa-sort-numeric-up"></i> Size (Large first)</span>
+                            </label>
+                            <label class="sort-option">
+                                <input type="radio" name="sortBy" value="date-asc">
+                                <span><i class="fas fa-calendar"></i> Date (Oldest first)</span>
+                            </label>
+                            <label class="sort-option">
+                                <input type="radio" name="sortBy" value="date-desc">
+                                <span><i class="fas fa-calendar-check"></i> Date (Newest first)</span>
+                            </label>
+                            <label class="sort-option">
+                                <input type="radio" name="sortBy" value="type">
+                                <span><i class="fas fa-layer-group"></i> Type</span>
+                            </label>
+                        </div>
+                    </div>
+
                     <div class="view-options">
                         <button class="btn-icon active" id="gridViewBtn" title="Grid view">
                             <i class="fas fa-th"></i>
@@ -108,6 +228,35 @@
                         <button class="btn-icon" id="listViewBtn" title="List view">
                             <i class="fas fa-list"></i>
                         </button>
+                    </div>
+
+                    <!-- Developer Tools Dropdown -->
+                    <div class="developer-dropdown">
+                        <button class="btn-icon" id="developerBtn" title="Developer Tools">
+                            <i class="fas fa-tools"></i>
+                        </button>
+                        <div class="developer-menu" id="developerMenu" style="display: none;">
+                            <div class="menu-header">Developer Tools</div>
+                            <button class="menu-item" onclick="developerTools.showBucketSettingsModal()">
+                                <i class="fas fa-cog"></i> Bucket Settings
+                            </button>
+                            <button class="menu-item" onclick="developerTools.showRequestConsole()">
+                                <i class="fas fa-terminal"></i> S3 Request Console
+                            </button>
+                            <button class="menu-item" onclick="developerTools.showPerformanceMetrics()">
+                                <i class="fas fa-chart-line"></i> Performance Metrics
+                            </button>
+                            <div class="menu-divider"></div>
+                            <button class="menu-item" onclick="showBucketPolicyEditor()">
+                                <i class="fas fa-shield-alt"></i> Bucket Policy Editor
+                            </button>
+                            <button class="menu-item" onclick="showCorsConfiguration()">
+                                <i class="fas fa-globe"></i> CORS Configuration
+                            </button>
+                            <button class="menu-item" onclick="showLifecyclePolicies()">
+                                <i class="fas fa-recycle"></i> Lifecycle Policies
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -123,8 +272,11 @@
                         <button class="btn-secondary" onclick="downloadSelected()">
                             <i class="fas fa-download"></i> Download
                         </button>
+                        <button class="btn-secondary" onclick="copySelected()">
+                            <i class="fas fa-copy"></i> Copy
+                        </button>
                         <button class="btn-secondary" onclick="moveSelected()">
-                            <i class="fas fa-arrows-alt"></i> Move
+                            <i class="fas fa-cut"></i> Cut
                         </button>
                         <button class="btn-danger" onclick="deleteSelected()">
                             <i class="fas fa-trash"></i> Delete
@@ -145,6 +297,21 @@
                 <!-- Files Grid/List -->
                 <div class="files-grid" id="filesGrid">
                     <!-- Files will be loaded here -->
+                </div>
+
+                <!-- Pagination Controls -->
+                <div class="pagination-container" id="paginationContainer" style="display: none;">
+                    <div class="pagination-info">
+                        <span id="fileCountDisplay">Showing 0 files</span>
+                    </div>
+                    <div class="pagination-actions">
+                        <button class="btn-secondary" id="loadMoreBtn" style="display: none;">
+                            <i class="fas fa-plus"></i> Load More
+                        </button>
+                        <button class="btn-ghost" id="loadAllBtn" style="display: none;">
+                            <i class="fas fa-download"></i> Load All
+                        </button>
+                    </div>
                 </div>
 
                 <!-- Selection Rectangle -->
@@ -198,6 +365,12 @@
         <a href="#" class="context-item" data-action="preview">
             <i class="fas fa-eye"></i> Preview
         </a>
+        <a href="#" class="context-item image-only" data-action="edit" style="display: none;">
+            <i class="fas fa-paint-brush"></i> Edit Image
+        </a>
+        <a href="#" class="context-item text-only" data-action="editText" style="display: none;">
+            <i class="fas fa-edit"></i> Edit Text
+        </a>
         <div class="context-divider"></div>
         <a href="#" class="context-item" data-action="rename">
             <i class="fas fa-edit"></i> Rename
@@ -208,6 +381,9 @@
         <a href="#" class="context-item" data-action="move">
             <i class="fas fa-arrows-alt"></i> Move
         </a>
+        <a href="#" class="context-item" data-action="paste" style="display: none;">
+            <i class="fas fa-paste"></i> Paste
+        </a>
         <div class="context-divider"></div>
         <a href="#" class="context-item" data-action="star">
             <i class="fas fa-star"></i> Add to Starred
@@ -216,9 +392,19 @@
             <i class="fas fa-share"></i> Share
         </a>
         <div class="context-divider"></div>
-        <a href="#" class="context-item" data-action="details">
-            <i class="fas fa-info-circle"></i> Details
+        <a href="#" class="context-item" data-action="versions">
+            <i class="fas fa-history"></i> Versions
         </a>
+        <a href="#" class="context-item" data-action="tags">
+            <i class="fas fa-tags"></i> Tags
+        </a>
+        <a href="#" class="context-item" data-action="metadata">
+            <i class="fas fa-info-circle"></i> Metadata
+        </a>
+        <a href="#" class="context-item" data-action="details">
+            <i class="fas fa-list"></i> Details
+        </a>
+        <div class="context-divider"></div>
         <a href="#" class="context-item danger" data-action="delete">
             <i class="fas fa-trash"></i> Delete
         </a>
@@ -237,12 +423,18 @@
             <div class="modal-body">
                 <div class="upload-area" id="uploadArea">
                     <i class="fas fa-cloud-upload-alt"></i>
-                    <h3>Choose files to upload</h3>
+                    <h3>Choose files or folders to upload</h3>
                     <p>or drag and drop them here</p>
                     <input type="file" id="fileInput" multiple style="display: none;">
-                    <button class="btn-primary" onclick="document.getElementById('fileInput').click()">
-                        Browse Files
-                    </button>
+                    <input type="file" id="folderInput" webkitdirectory directory multiple style="display: none;">
+                    <div class="upload-buttons">
+                        <button class="btn-primary" onclick="document.getElementById('fileInput').click()">
+                            <i class="fas fa-file"></i> Browse Files
+                        </button>
+                        <button class="btn-primary" onclick="document.getElementById('folderInput').click()">
+                            <i class="fas fa-folder"></i> Browse Folder
+                        </button>
+                    </div>
                 </div>
                 <div class="upload-list" id="uploadList">
                     <!-- Upload progress items will appear here -->
@@ -251,6 +443,58 @@
             <div class="modal-footer">
                 <button class="btn-secondary" onclick="closeModal('uploadModal')">Cancel</button>
                 <button class="btn-primary" id="startUploadBtn">Start Upload</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create Bucket Modal -->
+    <div class="modal" id="createBucketModal">
+        <div class="modal-content modal-small">
+            <div class="modal-header">
+                <h2>Create New Bucket</h2>
+                <button class="btn-icon" onclick="closeModal('createBucketModal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="bucketNameInput">Bucket Name</label>
+                    <input type="text" id="bucketNameInput" placeholder="my-bucket-name" class="form-input" maxlength="63">
+                    <div class="form-help">
+                        3-63 characters, lowercase letters, numbers, dots and hyphens only
+                    </div>
+                    <div class="form-error" id="bucketNameError" style="display: none; color: var(--danger-color); font-size: 12px; margin-top: 4px;"></div>
+                </div>
+
+                <div class="form-group">
+                    <label class="switch-label">
+                        <input type="checkbox" id="bucketEncryption" class="switch-input">
+                        <span class="switch-slider"></span>
+                        <span class="switch-text">
+                            <i class="fas fa-lock"></i> Enable Encryption
+                        </span>
+                    </label>
+                    <div class="form-help">
+                        Encrypt all objects stored in this bucket
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="switch-label">
+                        <input type="checkbox" id="bucketVersioning" class="switch-input">
+                        <span class="switch-slider"></span>
+                        <span class="switch-text">
+                            <i class="fas fa-history"></i> Enable Versioning
+                        </span>
+                    </label>
+                    <div class="form-help">
+                        Keep multiple versions of objects
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="closeModal('createBucketModal')">Cancel</button>
+                <button class="btn-primary" id="createBucketBtn" onclick="createBucket()">Create Bucket</button>
             </div>
         </div>
     </div>
@@ -322,6 +566,9 @@
             </div>
             <div class="modal-footer">
                 <span id="previewFileInfo" style="margin-right: auto; color: #5f6368; font-size: 13px;"></span>
+                <button class="btn-secondary" id="previewEditBtn" style="display: none;">
+                    <i class="fas fa-paint-brush"></i> Edit
+                </button>
                 <button class="btn-secondary" id="previewShareBtn">
                     <i class="fas fa-share"></i> Share
                 </button>
@@ -385,12 +632,592 @@
     </div>
 
 
+
     <!-- Hidden file input -->
     <input type="file" id="hiddenFileInput" multiple style="display: none;">
+
+    <!-- Advanced Search Modal -->
+    <div class="modal" id="advancedSearchModal">
+        <div class="modal-content modal-medium">
+            <div class="modal-header">
+                <h2>Advanced Search</h2>
+                <button class="btn-icon" onclick="closeModal('advancedSearchModal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Search Text</label>
+                    <input type="text" id="advSearchText" class="form-input" placeholder="Enter search terms...">
+                </div>
+
+                <div class="form-group">
+                    <label>File Type</label>
+                    <select id="advSearchType" class="form-input">
+                        <option value="">All Types</option>
+                        <option value="image">Images</option>
+                        <option value="video">Videos</option>
+                        <option value="audio">Audio</option>
+                        <option value="document">Documents</option>
+                        <option value="archive">Archives</option>
+                        <option value="code">Code</option>
+                        <option value="folder">Folders Only</option>
+                    </select>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Size Range</label>
+                        <div class="size-range">
+                            <input type="number" id="advSearchMinSize" class="form-input" placeholder="Min (MB)">
+                            <span>to</span>
+                            <input type="number" id="advSearchMaxSize" class="form-input" placeholder="Max (MB)">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Modified Date</label>
+                        <div class="date-range">
+                            <input type="date" id="advSearchFromDate" class="form-input">
+                            <span>to</span>
+                            <input type="date" id="advSearchToDate" class="form-input">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="advSearchRegex">
+                        Use Regular Expression
+                    </label>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="clearAdvancedSearch()">Clear</button>
+                <button class="btn-primary" onclick="applyAdvancedSearch()">Search</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Versions Modal -->
+    <div class="modal" id="versionsModal">
+        <div class="modal-content" style="max-width: 800px;">
+            <div class="modal-header">
+                <h2><i class="fas fa-history"></i> Version History</h2>
+                <button class="modal-close" onclick="closeModal('versionsModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="file-info-header" style="margin-bottom: 20px;">
+                    <h3 id="versionFileName" style="margin: 0; color: var(--text-primary);"></h3>
+                    <p id="versionFileInfo" style="margin: 5px 0; color: var(--text-secondary);"></p>
+                </div>
+                <div id="versionsLoading" style="text-align: center; padding: 40px;">
+                    <i class="fas fa-spinner fa-spin" style="font-size: 32px; color: var(--primary-color);"></i>
+                </div>
+                <div id="versionsList" style="display: none;">
+                    <table class="versions-table" style="width: 100%; border-collapse: collapse;">
+                        <thead>
+                            <tr style="border-bottom: 2px solid var(--border-color);">
+                                <th style="text-align: left; padding: 12px;">Version ID</th>
+                                <th style="text-align: left; padding: 12px;">Modified</th>
+                                <th style="text-align: left; padding: 12px;">Size</th>
+                                <th style="text-align: left; padding: 12px;">Latest</th>
+                                <th style="text-align: left; padding: 12px;">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="versionsTableBody"></tbody>
+                    </table>
+                </div>
+                <div id="noVersions" style="display: none; text-align: center; padding: 40px;">
+                    <i class="fas fa-info-circle" style="font-size: 48px; color: var(--text-secondary); margin-bottom: 16px;"></i>
+                    <p>Versioning is not enabled for this bucket or no versions available.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tags Modal -->
+    <div class="modal" id="tagsModal">
+        <div class="modal-content" style="max-width: 600px;">
+            <div class="modal-header">
+                <h2><i class="fas fa-tags"></i> Object Tags</h2>
+                <button class="modal-close" onclick="closeModal('tagsModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="file-info-header" style="margin-bottom: 20px;">
+                    <h3 id="tagsFileName" style="margin: 0; color: var(--text-primary);"></h3>
+                </div>
+                <div id="tagsLoading" style="display: none; text-align: center; padding: 40px;">
+                    <i class="fas fa-spinner fa-spin" style="font-size: 32px; color: var(--primary-color);"></i>
+                </div>
+                <div id="tagsList">
+                    <div id="existingTags"></div>
+                    <div style="margin-top: 20px;">
+                        <h4>Add New Tag</h4>
+                        <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                            <input type="text" id="newTagKey" placeholder="Key" style="flex: 1; padding: 8px; border: 1px solid var(--border-color); border-radius: 4px;">
+                            <input type="text" id="newTagValue" placeholder="Value" style="flex: 1; padding: 8px; border: 1px solid var(--border-color); border-radius: 4px;">
+                            <button class="btn-primary" onclick="addTag()">
+                                <i class="fas fa-plus"></i> Add
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer" style="margin-top: 20px;">
+                    <button class="btn-secondary" onclick="closeModal('tagsModal')">Cancel</button>
+                    <button class="btn-primary" onclick="saveTags()">
+                        <i class="fas fa-save"></i> Save Tags
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Metadata Modal -->
+    <div class="modal" id="metadataModal">
+        <div class="modal-content" style="max-width: 700px;">
+            <div class="modal-header">
+                <h2><i class="fas fa-info-circle"></i> Object Metadata</h2>
+                <button class="modal-close" onclick="closeModal('metadataModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="file-info-header" style="margin-bottom: 20px;">
+                    <h3 id="metadataFileName" style="margin: 0; color: var(--text-primary);"></h3>
+                </div>
+                <div id="metadataLoading" style="display: none; text-align: center; padding: 40px;">
+                    <i class="fas fa-spinner fa-spin" style="font-size: 32px; color: var(--primary-color);"></i>
+                </div>
+                <div id="metadataContent">
+                    <div id="systemMetadata" style="margin-bottom: 20px;">
+                        <h4>System Metadata</h4>
+                        <table class="metadata-table" style="width: 100%; border-collapse: collapse;">
+                            <tbody id="systemMetadataBody"></tbody>
+                        </table>
+                    </div>
+                    <div id="customMetadata">
+                        <h4>Custom Metadata</h4>
+                        <div id="customMetadataList"></div>
+                        <div style="margin-top: 15px;">
+                            <h5>Add Custom Metadata</h5>
+                            <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                                <input type="text" id="newMetaKey" placeholder="Key (x-amz-meta-*)" style="flex: 1; padding: 8px; border: 1px solid var(--border-color); border-radius: 4px;">
+                                <input type="text" id="newMetaValue" placeholder="Value" style="flex: 1; padding: 8px; border: 1px solid var(--border-color); border-radius: 4px;">
+                                <button class="btn-primary" onclick="addMetadata()">
+                                    <i class="fas fa-plus"></i> Add
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer" style="margin-top: 20px;">
+                    <button class="btn-secondary" onclick="closeModal('metadataModal')">Close</button>
+                    <button class="btn-primary" onclick="saveMetadata()">
+                        <i class="fas fa-save"></i> Save Metadata
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.5); z-index: 10000; justify-content: center; align-items: center;">
+        <div style="background: var(--bg-secondary, #fff); padding: 24px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); text-align: center;">
+            <i class="fas fa-spinner fa-spin" style="font-size: 32px; color: var(--primary-color, #4CAF50); margin-bottom: 16px;"></i>
+            <div id="loadingMessage" style="color: var(--text-primary, #333); margin-top: 12px;">Loading...</div>
+        </div>
+    </div>
+
+    <!-- File Editor Modal -->
+    <div class="modal" id="fileEditorModal">
+        <div class="modal-content editor-modal">
+            <div class="modal-header">
+                <div class="editor-header-info">
+                    <h2 id="editorModalTitle">File Editor</h2>
+                    <div class="editor-file-path" id="editorFilePath"></div>
+                </div>
+                <div class="editor-controls">
+                    <div class="editor-control-group">
+                        <label for="editorTheme">Theme:</label>
+                        <select id="editorTheme" class="editor-select">
+                            <option value="default">Default</option>
+                            <option value="eclipse">Eclipse</option>
+                            <option value="monokai">Monokai</option>
+                            <option value="dracula">Dracula</option>
+                            <option value="material">Material</option>
+                        </select>
+                    </div>
+                    <div class="editor-control-group">
+                        <label for="editorFontSize">Font Size:</label>
+                        <select id="editorFontSize" class="editor-select">
+                            <option value="12">12px</option>
+                            <option value="14" selected>14px</option>
+                            <option value="16">16px</option>
+                            <option value="18">18px</option>
+                            <option value="20">20px</option>
+                        </select>
+                    </div>
+                </div>
+                <button class="modal-close" aria-label="Close editor">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body editor-body">
+                <div id="editorLoading" class="editor-loading" style="display: none;">
+                    <div class="spinner"></div>
+                    <div id="editorLoadingMessage">Loading file...</div>
+                </div>
+                <div id="editorContainer" class="editor-container"></div>
+            </div>
+            <div class="modal-footer editor-footer">
+                <div class="editor-shortcuts">
+                    <span><kbd>Ctrl+S</kbd> Save</span>
+                    <span><kbd>Ctrl+Shift+S</kbd> Save As</span>
+                    <span><kbd>Ctrl+F</kbd> Find</span>
+                    <span><kbd>Ctrl+H</kbd> Replace</span>
+                    <span><kbd>Esc</kbd> Close</span>
+                </div>
+                <div class="editor-actions">
+                    <button class="btn-secondary" id="editorDownloadBtn">
+                        <i class="fas fa-download"></i> Download
+                    </button>
+                    <button class="btn-secondary" id="editorSaveAsBtn">
+                        <i class="fas fa-save"></i> Save As
+                    </button>
+                    <button class="btn-primary" id="editorSaveBtn" disabled>
+                        <i class="fas fa-save"></i> Save
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Background Upload Queue Panel -->
+    <div class="upload-queue-panel" id="uploadQueuePanel" style="display: none;">
+        <div class="upload-queue-header">
+            <h3><i class="fas fa-upload"></i> Upload Queue (<span id="queueCount">0</span>)</h3>
+            <div class="upload-queue-actions">
+                <button class="btn-icon" onclick="toggleUploadQueue()" title="Minimize">
+                    <i class="fas fa-chevron-down" id="queueToggleIcon"></i>
+                </button>
+                <button class="btn-icon" onclick="clearCompletedUploads()" title="Clear completed">
+                    <i class="fas fa-broom"></i>
+                </button>
+                <button class="btn-icon" onclick="hideUploadQueue()" title="Close">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        </div>
+        <div class="upload-queue-body" id="uploadQueueBody">
+            <div class="upload-queue-list" id="uploadQueueList">
+                <!-- Upload items will be added here dynamically -->
+            </div>
+            <div class="upload-queue-footer">
+                <div class="upload-progress-summary">
+                    <span id="uploadSpeed">0 MB/s</span>
+                    <span id="uploadTimeRemaining">--</span>
+                </div>
+                <div class="upload-queue-controls">
+                    <button class="btn-secondary btn-small" onclick="pauseAllUploads()" id="pauseAllBtn">
+                        <i class="fas fa-pause"></i> Pause All
+                    </button>
+                    <button class="btn-secondary btn-small" onclick="resumeAllUploads()" id="resumeAllBtn" style="display: none;">
+                        <i class="fas fa-play"></i> Resume All
+                    </button>
+                    <button class="btn-danger btn-small" onclick="cancelAllUploads()">
+                        <i class="fas fa-stop"></i> Cancel All
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Developer Tools Modals -->
+
+    <!-- Bucket Settings Modal -->
+    <div class="modal" id="bucketSettingsModal" style="display: none;">
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h2>Bucket Settings</h2>
+                <button class="btn-icon" onclick="closeModal('bucketSettingsModal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="settings-tabs">
+                    <button class="tab-btn active" onclick="switchSettingsTab('general')">General</button>
+                    <button class="tab-btn" onclick="switchSettingsTab('lifecycle')">Lifecycle</button>
+                    <button class="tab-btn" onclick="switchSettingsTab('cors')">CORS</button>
+                    <button class="tab-btn" onclick="switchSettingsTab('policy')">Bucket Policy</button>
+                    <button class="tab-btn" onclick="switchSettingsTab('notifications')">Events</button>
+                </div>
+
+                <div class="tab-content" id="generalTab">
+                    <div class="settings-section">
+                        <h3>Encryption</h3>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="bucketEncryptionToggle">
+                            <span class="toggle-slider"></span>
+                            <span class="toggle-label">Enable server-side encryption (AES256)</span>
+                        </label>
+                    </div>
+
+                    <div class="settings-section">
+                        <h3>Versioning</h3>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="bucketVersioningToggle">
+                            <span class="toggle-slider"></span>
+                            <span class="toggle-label">Enable object versioning</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="tab-content" id="lifecycleTab" style="display: none;">
+                    <div class="section-header">
+                        <h3>Lifecycle Rules</h3>
+                        <button class="btn-primary btn-sm" onclick="showAddLifecycleRule()">
+                            <i class="fas fa-plus"></i> Add Rule
+                        </button>
+                    </div>
+                    <div id="lifecycleRules"></div>
+                </div>
+
+                <div class="tab-content" id="corsTab" style="display: none;">
+                    <h3>CORS Configuration</h3>
+                    <div class="editor-toolbar">
+                        <button class="btn-secondary btn-sm" onclick="formatCorsJson()">
+                            <i class="fas fa-magic"></i> Format JSON
+                        </button>
+                        <button class="btn-secondary btn-sm" onclick="validateCorsJson()">
+                            <i class="fas fa-check"></i> Validate
+                        </button>
+                        <button class="btn-primary btn-sm" onclick="saveCorsConfiguration()">
+                            <i class="fas fa-save"></i> Save CORS
+                        </button>
+                    </div>
+                    <div id="corsEditorContainer"></div>
+                </div>
+
+                <div class="tab-content" id="policyTab" style="display: none;">
+                    <h3>Bucket Policy</h3>
+                    <div class="editor-toolbar">
+                        <button class="btn-secondary btn-sm" onclick="formatPolicyJson()">
+                            <i class="fas fa-magic"></i> Format JSON
+                        </button>
+                        <button class="btn-secondary btn-sm" onclick="validatePolicyJson()">
+                            <i class="fas fa-check"></i> Validate
+                        </button>
+                        <button class="btn-secondary btn-sm" onclick="generatePolicyTemplate()">
+                            <i class="fas fa-file-alt"></i> Template
+                        </button>
+                        <button class="btn-primary btn-sm" onclick="saveBucketPolicy()">
+                            <i class="fas fa-save"></i> Save Policy
+                        </button>
+                    </div>
+                    <div id="policyEditorContainer"></div>
+                </div>
+
+                <div class="tab-content" id="notificationsTab" style="display: none;">
+                    <h3>Event Notifications</h3>
+                    <div id="eventNotifications"></div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="closeModal('bucketSettingsModal')">Cancel</button>
+                <button class="btn-primary" onclick="saveBucketSettings()">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- S3 Request Console Modal -->
+    <div class="modal" id="requestConsoleModal" style="display: none;">
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h2>S3 Request Console</h2>
+                <button class="btn-icon" onclick="closeModal('requestConsoleModal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="console-toolbar">
+                    <button class="btn-secondary" onclick="developerTools.clearRequestHistory()">
+                        <i class="fas fa-trash"></i> Clear History
+                    </button>
+                    <button class="btn-secondary" onclick="developerTools.displayRequestHistory()">
+                        <i class="fas fa-sync"></i> Refresh
+                    </button>
+                </div>
+                <div id="requestHistory" class="request-history"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Request Details Modal -->
+    <div class="modal" id="requestDetailsModal" style="display: none;">
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h2>Request Details</h2>
+                <button class="btn-icon" onclick="closeModal('requestDetailsModal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div id="requestDetailsContent"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="closeModal('requestDetailsModal')">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lifecycle Rule Modal -->
+    <div class="modal" id="lifecycleRuleModal" style="display: none;">
+        <div class="modal-content modal-medium">
+            <div class="modal-header">
+                <h2 id="lifecycleRuleTitle">Add Lifecycle Rule</h2>
+                <button class="btn-icon" onclick="closeModal('lifecycleRuleModal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="ruleId">Rule ID</label>
+                    <input type="text" id="ruleId" class="form-input" placeholder="e.g., delete-old-logs">
+                </div>
+
+                <div class="form-group">
+                    <label for="rulePrefix">Prefix (optional)</label>
+                    <input type="text" id="rulePrefix" class="form-input" placeholder="e.g., logs/">
+                </div>
+
+                <div class="form-group">
+                    <label for="ruleStatus">Status</label>
+                    <select id="ruleStatus" class="form-input">
+                        <option value="Enabled">Enabled</option>
+                        <option value="Disabled">Disabled</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Actions</label>
+
+                    <div class="rule-action">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="enableExpiration">
+                            <span>Delete objects after</span>
+                        </label>
+                        <div class="rule-action-config" id="expirationConfig" style="display: none;">
+                            <input type="number" id="expirationDays" class="form-input" min="1" placeholder="Days">
+                            <span>days</span>
+                        </div>
+                    </div>
+
+                    <div class="rule-action">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="enableTransition">
+                            <span>Transition to storage class after</span>
+                        </label>
+                        <div class="rule-action-config" id="transitionConfig" style="display: none;">
+                            <input type="number" id="transitionDays" class="form-input" min="1" placeholder="Days">
+                            <span>days to</span>
+                            <select id="storageClass" class="form-input">
+                                <option value="STANDARD_IA">Standard-IA</option>
+                                <option value="ONEZONE_IA">One Zone-IA</option>
+                                <option value="INTELLIGENT_TIERING">Intelligent-Tiering</option>
+                                <option value="GLACIER">Glacier</option>
+                                <option value="DEEP_ARCHIVE">Glacier Deep Archive</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="rule-action">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="enableNoncurrentExpiration">
+                            <span>Delete noncurrent versions after</span>
+                        </label>
+                        <div class="rule-action-config" id="noncurrentExpirationConfig" style="display: none;">
+                            <input type="number" id="noncurrentDays" class="form-input" min="1" placeholder="Days">
+                            <span>days</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="closeModal('lifecycleRuleModal')">Cancel</button>
+                <button class="btn-primary" onclick="saveLifecycleRule()">Save Rule</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Performance Metrics Modal -->
+    <div class="modal" id="performanceMetricsModal" style="display: none;">
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h2>Performance Metrics</h2>
+                <button class="btn-icon" onclick="closeModal('performanceMetricsModal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="metrics-toolbar">
+                    <button class="btn-secondary" onclick="developerTools.resetPerformanceMetrics()">
+                        <i class="fas fa-redo"></i> Reset Metrics
+                    </button>
+                    <button class="btn-secondary" onclick="developerTools.displayPerformanceMetrics()">
+                        <i class="fas fa-sync"></i> Refresh
+                    </button>
+                </div>
+                <div id="performanceMetricsContent"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="closeModal('performanceMetricsModal')">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- CodeMirror Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/mode/simple.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/javascript/javascript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/css/css.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/xml/xml.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/htmlmixed/htmlmixed.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/markdown/markdown.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/python/python.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/clike/clike.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/shell/shell.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/sql/sql.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/php/php.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/ruby/ruby.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/go/go.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/yaml/yaml.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/vue/vue.min.js"></script>
+    <!-- These modes require simple.js to be loaded first -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/rust/rust.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/dockerfile/dockerfile.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/edit/closebrackets.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/edit/matchbrackets.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/edit/closetag.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/fold/foldcode.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/fold/foldgutter.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/fold/brace-fold.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/fold/indent-fold.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/search/searchcursor.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/search/search.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/dialog/dialog.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/display/fullscreen.min.js"></script>
 
     <!-- Scripts -->
     <script src="js/env.js?v=1.3.2"></script>
     <script src="js/auth.js?v=1.3.3"></script>
-    <script src="js/dashboard.js?v=1.3.3"></script>
+    <script src="js/file-editor.js?v=1.0.0"></script>
+    <script src="js/dashboard.js?v=1.3.4"></script>
+    <script src="js/upload-queue.js?v=1.0.0"></script>
+    <script src="js/file-comparison.js?v=1.0.0"></script>
+    <script src="js/bucket-management.js?v=1.0.0"></script>
+    <script src="js/developer-tools.js?v=1.0.0"></script>
+    <script src="js/developer-tools-ui.js?v=1.0.0"></script>
+    <script src="js/developer-tools-enhanced.js?v=1.0.0"></script>
 </body>
 </html>
