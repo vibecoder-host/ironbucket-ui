@@ -1358,14 +1358,20 @@ async function previewFile(key) {
     const fileName = key.split('/').pop();
     const ext = fileName.split('.').pop().toLowerCase();
 
-    // Reset all preview elements
+    // Simple approach: just clear iframe and show modal immediately
+    iframe.src = 'about:blank';
+
+    // Reset all preview elements visibility
     loading.style.display = 'flex';
     iframe.style.display = 'none';
     image.style.display = 'none';
     textDiv.style.display = 'none';
     errorDiv.style.display = 'none';
 
+    // Update title with new filename
     title.textContent = fileName;
+
+    // Show the modal immediately with loading spinner
     showModal('previewModal');
 
     // Get file info
@@ -2988,18 +2994,10 @@ function closeModal(modalId) {
     if (modalId === 'previewModal') {
         const iframe = document.getElementById('previewIframe');
         const image = document.getElementById('previewImage');
-        const textDiv = document.getElementById('previewText');
-        const errorDiv = document.getElementById('previewError');
 
         // Clear iframe source to stop loading
         iframe.src = 'about:blank';
-        iframe.srcdoc = '';
         iframe.style.display = 'none';
-
-        // Hide all preview elements
-        image.style.display = 'none';
-        textDiv.style.display = 'none';
-        errorDiv.style.display = 'none';
 
         // Clear any stored URLs
         if (iframe.dataset.presignedUrl) {
@@ -3011,12 +3009,11 @@ function closeModal(modalId) {
         }
 
         // Clear image source
-        if (image.src) {
-            if (image.src.startsWith('blob:')) {
-                URL.revokeObjectURL(image.src);
-            }
-            image.src = '';
+        if (image.src && image.src.startsWith('blob:')) {
+            URL.revokeObjectURL(image.src);
         }
+        image.src = '';
+        image.style.display = 'none';
     }
 }
 
