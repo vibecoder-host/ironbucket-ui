@@ -531,6 +531,115 @@ class EnhancedDeveloperTools {
         showNotification('Policy template generated. Customize as needed.', 'info');
     }
 
+    applyPolicyTemplate(templateType) {
+        if (!this.policyEditor || !window.currentBucket) {
+            showNotification('Please select a bucket first', 'error');
+            return;
+        }
+
+        let template = {
+            "Version": "2012-10-17",
+            "Statement": []
+        };
+
+        switch(templateType) {
+            case 'allowIpRange':
+                template.Statement = [
+                    {
+                        "Sid": "AllowIPRange",
+                        "Effect": "Allow",
+                        "Principal": "*",
+                        "Action": "s3:*",
+                        "Resource": `arn:aws:s3:::${window.currentBucket}/*`,
+                        "Condition": {
+                            "IpAddress": {
+                                "aws:SourceIp": [
+                                    "192.168.1.0/24"
+                                ]
+                            }
+                        }
+                    }
+                ];
+                break;
+
+            case 'denyLargeUploads':
+                template.Statement = [
+                    {
+                        "Sid": "DenyLargeUploads",
+                        "Effect": "Deny",
+                        "Principal": "*",
+                        "Action": "s3:PutObject",
+                        "Resource": `arn:aws:s3:::${window.currentBucket}/*`,
+                        "Condition": {
+                            "NumericGreaterThan": {
+                                "s3:content-length": "104857600"
+                            }
+                        }
+                    }
+                ];
+                break;
+
+            case 'denyDelete':
+                template.Statement = [
+                    {
+                        "Sid": "DenyDelete",
+                        "Effect": "Deny",
+                        "Principal": "*",
+                        "Action": [
+                            "s3:DeleteObject",
+                            "s3:DeleteObjectVersion"
+                        ],
+                        "Resource": `arn:aws:s3:::${window.currentBucket}/*`
+                    }
+                ];
+                break;
+
+            case 'timeBasedAccess':
+                const futureDate = new Date();
+                futureDate.setFullYear(futureDate.getFullYear() + 1);
+                template.Statement = [
+                    {
+                        "Sid": "TimeBasedAccess",
+                        "Effect": "Deny",
+                        "Principal": "*",
+                        "Action": "s3:*",
+                        "Resource": `arn:aws:s3:::${window.currentBucket}/*`,
+                        "Condition": {
+                            "DateGreaterThan": {
+                                "aws:CurrentTime": futureDate.toISOString()
+                            }
+                        }
+                    }
+                ];
+                break;
+
+            default:
+                showNotification('Unknown template type', 'error');
+                return;
+        }
+
+        this.policyEditor.setValue(JSON.stringify(template, null, 2));
+
+        // Close the dropdown menu
+        document.getElementById('policyTemplateMenu').style.display = 'none';
+
+        showNotification('Policy template applied. Customize as needed.', 'info');
+    }
+
+    togglePolicyTemplateMenu(event) {
+        event.stopPropagation();
+        const menu = document.getElementById('policyTemplateMenu');
+        menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+
+        // Close menu when clicking outside
+        document.addEventListener('click', function closeMenu(e) {
+            if (!menu.contains(e.target) && !e.target.closest('.dropdown-toggle')) {
+                menu.style.display = 'none';
+                document.removeEventListener('click', closeMenu);
+            }
+        });
+    }
+
     async saveBucketPolicy() {
         if (!window.currentBucket || !this.policyEditor) {
             showNotification('No bucket selected', 'error');
@@ -681,3 +790,5 @@ window.formatPolicyJson = () => enhancedDeveloperTools.formatPolicyJson();
 window.validatePolicyJson = () => enhancedDeveloperTools.validatePolicyJson();
 window.generatePolicyTemplate = () => enhancedDeveloperTools.generatePolicyTemplate();
 window.saveBucketPolicy = () => enhancedDeveloperTools.saveBucketPolicy();
+window.applyPolicyTemplate = (type) => enhancedDeveloperTools.applyPolicyTemplate(type);
+window.togglePolicyTemplateMenu = (event) => enhancedDeveloperTools.togglePolicyTemplateMenu(event);

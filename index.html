@@ -1008,9 +1008,29 @@
                         <button class="btn-secondary btn-sm" onclick="validatePolicyJson()">
                             <i class="fas fa-check"></i> Validate
                         </button>
-                        <button class="btn-secondary btn-sm" onclick="generatePolicyTemplate()">
-                            <i class="fas fa-file-alt"></i> Template
-                        </button>
+                        <div class="dropdown" style="display: inline-block;">
+                            <button class="btn-secondary btn-sm dropdown-toggle" onclick="togglePolicyTemplateMenu(event)">
+                                <i class="fas fa-file-alt"></i> Template
+                            </button>
+                            <div id="policyTemplateMenu" class="dropdown-menu" style="display: none;">
+                                <button class="dropdown-item" onclick="applyPolicyTemplate('allowIpRange')">
+                                    <i class="fas fa-network-wired"></i> Allow IP Range
+                                    <small class="d-block text-muted">Allow access from specific IP addresses or ranges</small>
+                                </button>
+                                <button class="dropdown-item" onclick="applyPolicyTemplate('denyLargeUploads')">
+                                    <i class="fas fa-ban"></i> Deny Large Uploads
+                                    <small class="d-block text-muted">Prevent uploads larger than specified size</small>
+                                </button>
+                                <button class="dropdown-item" onclick="applyPolicyTemplate('denyDelete')">
+                                    <i class="fas fa-trash-alt"></i> Deny Delete Operations
+                                    <small class="d-block text-muted">Prevent deletion of objects</small>
+                                </button>
+                                <button class="dropdown-item" onclick="applyPolicyTemplate('timeBasedAccess')">
+                                    <i class="fas fa-clock"></i> Time-Based Access
+                                    <small class="d-block text-muted">Allow access only during specific time periods</small>
+                                </button>
+                            </div>
+                        </div>
                         <button class="btn-primary btn-sm" onclick="saveBucketPolicy()">
                             <i class="fas fa-save"></i> Save Policy
                         </button>
